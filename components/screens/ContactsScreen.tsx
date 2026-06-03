@@ -3,16 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { HeartPulse, MapPin, Pill, X } from "lucide-react";
-
-// Slim, solid phone handset (Material-style) — no signal waves.
-function SolidPhone({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden xmlns="http://www.w3.org/2000/svg">
-      <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.6 21 3 13.4 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
-    </svg>
-  );
-}
-import { CareProfileGlyph, SmsAlertGlyph } from "@/components/glyphs";
+import { CareProfileGlyph, SmsAlertGlyph, SolidPhone } from "@/components/glyphs";
 import { useApp } from "@/context/AppContext";
 import { ambulance, contacts, patient } from "@/lib/data";
 
@@ -37,7 +28,7 @@ export default function ContactsScreen() {
           className="flex flex-col items-center gap-1 rounded-2xl bg-white px-3 py-3.5 shadow-[0_2px_14px_rgba(30,50,90,0.06)] hover:shadow-[0_8px_22px_rgba(30,50,90,0.12)]"
         >
           <CareProfileGlyph size={34} />
-          <span className="text-[13px] font-semibold text-ink">Care Profile</span>
+          <span className="text-[15px] font-bold text-ink">Care Profile</span>
         </motion.button>
         <motion.a
           href={smsHref}
@@ -47,13 +38,13 @@ export default function ContactsScreen() {
           className="flex flex-col items-center gap-1 rounded-2xl bg-white px-3 py-3.5 shadow-[0_2px_14px_rgba(30,50,90,0.06)] hover:shadow-[0_8px_22px_rgba(30,50,90,0.12)]"
         >
           <SmsAlertGlyph size={34} />
-          <span className="text-[13px] font-semibold text-ink">SMS Alert</span>
+          <span className="text-[15px] font-bold text-ink">SMS Alert</span>
         </motion.a>
       </div>
 
       {/* Emergency contacts */}
       <section className="pt-3">
-        <h2 className="mb-3 px-1 text-[16px] font-bold text-ink">
+        <h2 className="mb-3 px-1 text-[15px] font-bold text-ink">
           {t("contacts.title")}
         </h2>
         <div className="overflow-hidden rounded-2xl bg-white shadow-[0_2px_12px_rgba(30,50,90,0.06)]">
@@ -66,13 +57,15 @@ export default function ContactsScreen() {
               }`}
             >
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[14px] font-bold leading-tight text-ink">
-                  {c.name}
-                  <span className="ml-2 text-[12px] font-normal text-muted">
+                <span className="flex items-baseline gap-2 truncate">
+                  <span className="text-[15px] font-bold leading-tight text-ink">
+                    {c.name}
+                  </span>
+                  <span className="text-[12px] font-medium text-faint">
                     {c.relation}
                   </span>
                 </span>
-                <span className="mt-0.5 block text-[12px] leading-tight text-muted">
+                <span className="mt-0.5 block text-[13px] leading-tight text-muted">
                   {c.phone}
                 </span>
               </span>

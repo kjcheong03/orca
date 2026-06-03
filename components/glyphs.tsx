@@ -4,6 +4,31 @@
 const BLUE = "#5b9be8";
 const RED = "#e5544e";
 
+// Slim, solid phone handset (Material-style) — no signal waves. fill follows
+// the current text color, so it inherits whatever the parent sets.
+export function SolidPhone({
+  size = 16,
+  className,
+}: {
+  size?: number;
+  className?: string;
+  strokeWidth?: number;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.6 21 3 13.4 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+    </svg>
+  );
+}
+
 export function CareProfileGlyph({ size = 44 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="5.5 6 37 37" fill="none" aria-hidden xmlns="http://www.w3.org/2000/svg">
