@@ -41,7 +41,7 @@ function TabCell({
         onClick={onSelect}
         aria-label={label}
         aria-current={active ? "page" : undefined}
-        className={`m-1.5 flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl text-[10px] font-medium transition-colors ${
+        className={`mx-1.5 my-1.5 flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-[10px] font-medium transition-colors ${
           active ? fill : "text-faint"
         }`}
       >
