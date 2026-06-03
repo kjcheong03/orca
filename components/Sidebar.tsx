@@ -1,21 +1,18 @@
 "use client";
 
-import {
-  BriefcaseMedical,
-  ChevronRight,
-  Globe,
-  Info,
-  Phone,
-  User,
-} from "lucide-react";
+import type { ComponentType } from "react";
+import { ChevronRight, Globe, Info, User, UsersRound } from "lucide-react";
 import Mascot from "@/components/Mascot";
+import { SolidPhone } from "@/components/glyphs";
 import { useApp, type Tab } from "@/context/AppContext";
 import { languageNames } from "@/lib/i18n";
 
-const items: { tab: Tab; icon: typeof Info; key: string }[] = [
+type IconType = ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+
+const items: { tab: Tab; icon: IconType; key: string }[] = [
   { tab: "info", icon: Info, key: "nav.info" },
-  { tab: "support", icon: BriefcaseMedical, key: "nav.support" },
-  { tab: "contacts", icon: Phone, key: "nav.contacts" },
+  { tab: "support", icon: UsersRound, key: "nav.support" },
+  { tab: "contacts", icon: SolidPhone, key: "nav.contacts" },
   { tab: "profile", icon: User, key: "nav.profile" },
 ];
 

@@ -1,19 +1,23 @@
 "use client";
 
-import { BriefcaseMedical, Info, Phone, User, type LucideIcon } from "lucide-react";
+import type { ComponentType } from "react";
+import { Info, User, UsersRound } from "lucide-react";
+import { SolidPhone } from "@/components/glyphs";
 import { useApp, type Tab } from "@/context/AppContext";
 import { languageCodes } from "@/lib/i18n";
 
+type IconType = ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+
 interface NavItem {
   tab: Tab;
-  icon: LucideIcon;
+  icon: IconType;
   key: string;
 }
 
 const items: NavItem[] = [
   { tab: "info", icon: Info, key: "nav.info" },
-  { tab: "support", icon: BriefcaseMedical, key: "nav.support" },
-  { tab: "contacts", icon: Phone, key: "nav.contacts" },
+  { tab: "support", icon: UsersRound, key: "nav.support" },
+  { tab: "contacts", icon: SolidPhone, key: "nav.contacts" },
   { tab: "profile", icon: User, key: "nav.profile" },
 ];
 
@@ -37,7 +41,7 @@ function TabCell({
         onClick={onSelect}
         aria-label={label}
         aria-current={active ? "page" : undefined}
-        className={`m-1.5 flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl text-[10px] font-medium transition-colors ${
+        className={`mx-1.5 my-1.5 flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-[10px] font-medium transition-colors ${
           active ? fill : "text-faint"
         }`}
       >

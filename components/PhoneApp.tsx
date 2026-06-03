@@ -19,16 +19,15 @@ const screens: { tab: Tab; Component: () => React.ReactNode }[] = [
 
 function Shell() {
   const { tab } = useApp();
-  const bg = tab === "contacts" ? "bg-app-2" : "bg-app";
 
   return (
-    <div className={`min-h-[100dvh] ${bg} transition-colors`}>
+    <div className="min-h-[100dvh] bg-app">
       <div className="lg:flex">
         <Sidebar />
         <div className="min-w-0 flex-1">
           {/* All screens stay mounted so in-progress flows (e.g. an emergency
               call) survive tab switches; only the active one is shown. */}
-          <div className="mx-auto w-full max-w-5xl pb-28 lg:pb-14">
+          <div className="mx-auto w-full max-w-5xl pb-20 lg:pb-14">
             {screens.map(({ tab: t, Component }) => (
               <div key={t} hidden={tab !== t}>
                 <Component />
