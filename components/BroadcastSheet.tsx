@@ -65,7 +65,7 @@ export default function BroadcastSheet() {
                   onClick={() => setExpanded(open ? null : b.id)}
                   aria-expanded={open}
                   aria-controls={`broadcast-body-${b.id}`}
-                  className="flex w-full items-center gap-3 p-5 text-left"
+                  className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
                 >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand">
                     <Megaphone size={18} className="text-white" />

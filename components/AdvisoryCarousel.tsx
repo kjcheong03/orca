@@ -42,7 +42,7 @@ export default function AdvisoryCarousel() {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       aria-label="View all advisories"
-      className="relative block h-[84px] w-full overflow-hidden rounded-[20px] bg-card text-left shadow-[0_2px_14px_rgba(30,50,90,0.06)] transition-shadow hover:shadow-[0_4px_20px_rgba(30,50,90,0.1)]"
+      className="relative block h-[60px] w-full overflow-hidden rounded-[16px] bg-card text-left shadow-[0_2px_14px_rgba(30,50,90,0.06)] transition-shadow hover:shadow-[0_4px_20px_rgba(30,50,90,0.1)]"
     >
       <AnimatePresence initial={false}>
         <motion.div
@@ -51,10 +51,10 @@ export default function AdvisoryCarousel() {
           animate={{ y: "0%" }}
           exit={{ y: "-110%" }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          className="absolute inset-0 flex items-center gap-4 py-3.5 pl-3.5 pr-16"
+          className="absolute inset-0 flex items-center gap-3 px-3 pr-14"
         >
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand">
-            <Megaphone size={26} className="text-white" />
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand">
+            <Megaphone size={18} className="text-white" />
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[15px] font-bold text-ink">
