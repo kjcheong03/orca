@@ -43,7 +43,7 @@ function TierBadge({ tier }: { tier: Tier }) {
   const tone = tierStyle[tier];
   return (
     <span
-      className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-bold ${tone.soft} ${tone.text}`}
+      className={`flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold ${tone.soft} ${tone.text}`}
     >
       <span className={`h-2 w-2 rounded-full ${tone.dot}`} />
       {tierLabel[tier]}
@@ -286,7 +286,7 @@ function CovidCards({ date }: { date: string }) {
           <TierBadge tier={s.tier} />
         </div>
 
-        <div className="mt-1.5 flex items-baseline gap-2">
+        <div className="mt-2 flex items-baseline gap-2">
           <span className="text-[26px] font-extrabold tracking-tight text-ink">
             {s.point.cases.toLocaleString("en-SG")}
           </span>
