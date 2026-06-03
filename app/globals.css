@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+/* ----------------------------------------------------------------------------
+   CARA design tokens
+   Reconstructed from the product screenshots: soft blue "info" surfaces,
+   white rounded cards, a strong blue primary, a coral-red emergency accent,
+   and an amber "advisory" accent.
+---------------------------------------------------------------------------- */
+@theme {
+  --color-ink: #14161a; /* headings / primary text */
+  --color-body: #3b4252; /* secondary body copy */
+  --color-muted: #6b7280; /* tertiary / captions */
+  --color-faint: #9aa1ad;
+
+  --color-brand: #2563eb; /* primary blue */
+  --color-brand-dark: #1d4ed8;
+  --color-brand-soft: #e6edfb;
+
+  --color-danger: #e5544e; /* emergency coral-red */
+  --color-danger-dark: #d23b35;
+  --color-danger-soft: #fdeaea;
+
+  --color-warn: #e8730c; /* "unhealthy" / heat amber */
+  --color-warn-soft: #fdeede;
+
+  --color-app: #e8eef8; /* info / support page background */
+  --color-app-2: #ebeef2; /* contacts / emergency page background */
+  --color-card: #ffffff;
+  --color-surface-2: #f4f6fb; /* "Why?" panel / inset surfaces */
+  --color-subtle: #eceef3; /* secondary / unselected button fill */
+
+  --color-track: #ffffff; /* segmented-control track */
+  --color-seg: #111317; /* segmented-control active pill */
+
+  --color-badge-bg: #edeff3; /* NEA / source chips */
+  --color-badge-ink: #59616f;
+  --color-urgent-bg: #fde7e7;
+  --color-urgent-ink: #d92d20;
+
+  --color-check: #e5544e; /* "what to do" checkmarks */
+
+  --color-video-bg: #e7eaf1; /* care-guide video placeholder */
+  --color-video-accent: #cdd3e0;
+  --color-video-icon: #7a839a;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+
+  --radius-card: 22px;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  background:
+    radial-gradient(1200px 800px at 50% -10%, #d7e0f3 0%, #c7d2ea 45%, #b9c5e2 100%);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Hide the native date-input calendar icon — the whole pill opens the picker */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+/* Centre the date value inside the pill (text-align doesn't work on date
+   inputs, so lay the input out as a centred flex container) */
+input[type="date"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+input[type="date"]::-webkit-datetime-edit {
+  text-align: center;
+}
+
+/* Hide scrollbars inside the phone for a more native feel */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes cara-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes cara-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes cara-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  70% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.sheet-enter {
+  animation: cara-sheet-up 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.fade-enter {
+  animation: cara-fade 0.2s ease-out;
+}
+
+/* Headings use a tighter, heavier display treatment to match the mockups */
+.display {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
