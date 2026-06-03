@@ -3,8 +3,11 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Check, MapPin, Minus, TrendingDown, TrendingUp } from "lucide-react";
+import AdvisoryCarousel from "@/components/AdvisoryCarousel";
+import MediaCarousel from "@/components/MediaCarousel";
 import Mascot from "@/components/Mascot";
 import SegmentedToggle from "@/components/ui/SegmentedToggle";
+import { guidance, news } from "@/lib/media";
 import { patient } from "@/lib/data";
 import { getDengueScenario, HOME } from "@/lib/dengue";
 import { covidWeekly } from "@/lib/outbreaks";
@@ -101,6 +104,9 @@ export default function InfoScreen() {
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-5 px-4 pb-8 pt-4 lg:px-8 lg:pt-8">
+      {/* Active advisories — vertical slideshow, opens the broadcast sheet */}
+      <AdvisoryCarousel />
+
       {/* Top control: date (COVID) or location (Dengue) — minimal centred pill */}
       <div className="flex justify-center">
         {isCovid ? (
@@ -156,6 +162,13 @@ export default function InfoScreen() {
       </div>
 
       {isCovid ? <CovidCards date={date} /> : <DengueCards />}
+
+      <MediaCarousel title="Latest updates" items={news[hazard]} />
+      <MediaCarousel
+        title="Guidance resources"
+        subtitle="Trusted guides you can act on"
+        items={guidance[hazard]}
+      />
     </div>
   );
 }
