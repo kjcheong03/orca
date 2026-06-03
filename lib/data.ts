@@ -118,11 +118,11 @@ export const healthSignals: Advisory[] = [
 // ---------------------------------------------------------------------------
 export const broadcasts: Broadcast[] = [
   {
-    id: "haze",
-    title: "Haze advisory in effect",
-    body: "NEA expects the 24-hour PSI to stay in the unhealthy range (101–200) into the evening. Vulnerable groups — the elderly, young children, pregnant women and those with heart or lung conditions — should stay indoors and reduce strenuous activity. Keep windows shut, switch on the air purifier if available, and wear an N95 mask if going out is unavoidable. Watch the elderly for cough, breathlessness or chest discomfort and seek medical help early if symptoms appear.",
-    source: "gov.sg",
-    time: "8:45 AM",
+    id: "covid",
+    title: "COVID-19 activity is rising",
+    body: "MOH reports rising COVID-19 and influenza activity, with a mild increase in admissions among older adults. Keep COVID-19 and flu boosters up to date, test early at the first sign of symptoms, and consider a mask in crowded or enclosed indoor places. Watch the elderly for fever, cough or breathlessness, and seek care promptly for chest pain, confusion or trouble breathing — older adults can deteriorate quickly.",
+    source: "MOH",
+    time: "8:30 AM",
   },
   {
     id: "dengue-red",
@@ -135,8 +135,8 @@ export const broadcasts: Broadcast[] = [
 
 /** The compact banner pinned at the top of the Info screens. */
 export const bannerBroadcast = {
-  title: "Haze advisory in effect",
-  preview: "NEA expects the 24-hour PSI to stay",
+  title: "COVID-19 activity is rising",
+  preview: "MOH reports rising COVID-19 and influenza activity",
 };
 
 // ---------------------------------------------------------------------------

@@ -5,13 +5,11 @@ import {
   ChevronRight,
   Globe,
   Info,
-  Megaphone,
   Phone,
   User,
 } from "lucide-react";
 import Mascot from "@/components/Mascot";
 import { useApp, type Tab } from "@/context/AppContext";
-import { bannerBroadcast } from "@/lib/data";
 import { languageNames } from "@/lib/i18n";
 
 const items: { tab: Tab; icon: typeof Info; key: string }[] = [
@@ -22,7 +20,7 @@ const items: { tab: Tab; icon: typeof Info; key: string }[] = [
 ];
 
 export default function Sidebar() {
-  const { tab, setTab, t, lang, openLangPicker, openBroadcast } = useApp();
+  const { tab, setTab, t, lang, openLangPicker } = useApp();
 
   return (
     <aside className="sticky top-0 hidden h-[100dvh] w-72 shrink-0 flex-col border-r border-black/5 bg-white px-5 py-7 lg:flex">
@@ -38,23 +36,6 @@ export default function Sidebar() {
           <span className="block text-[12px] text-muted">Health companion</span>
         </span>
       </div>
-
-      {/* Broadcast shortcut */}
-      <button
-        type="button"
-        onClick={openBroadcast}
-        className="mt-6 flex items-center gap-3 rounded-2xl bg-app px-4 py-3 text-left"
-      >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand">
-          <Megaphone size={18} className="text-white" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[12px] font-bold text-ink">
-            {bannerBroadcast.title}
-          </span>
-          <span className="block text-[11px] text-muted">View broadcasts</span>
-        </span>
-      </button>
 
       {/* Nav */}
       <nav className="mt-6 flex flex-col gap-2">
@@ -89,7 +70,6 @@ export default function Sidebar() {
         <span className="flex-1 truncate">{languageNames[lang]}</span>
         <ChevronRight size={18} className="text-faint" />
       </button>
-      <p className="mt-3 px-1 text-[11px] text-faint">Frontend prototype</p>
     </aside>
   );
 }

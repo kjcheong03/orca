@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, ExternalLink, Globe } from "lucide-react";
+import { useState } from "react";
+import { Globe } from "lucide-react";
 import FormatBadge from "@/components/ui/FormatBadge";
 import type { MediaItem } from "@/lib/media";
 
@@ -14,16 +14,16 @@ function domainOf(url: string): string {
 }
 
 /** The publisher favicon, falling back to a globe glyph if it fails to load. */
-function Favicon({ domain }: { domain: string }) {
+function Favicon({ domain, size = 16 }: { domain: string; size?: number }) {
   const [failed, setFailed] = useState(false);
-  if (failed || !domain) return <Globe size={15} className="text-faint" />;
+  if (failed || !domain) return <Globe size={size} className="text-faint" />;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
       alt=""
-      width={16}
-      height={16}
+      width={size}
+      height={size}
       className="rounded-sm"
       onError={() => setFailed(true)}
     />
@@ -31,35 +31,32 @@ function Favicon({ domain }: { domain: string }) {
 }
 
 const cardCls =
-  "flex h-[164px] w-[252px] shrink-0 snap-start flex-col rounded-[16px] bg-card p-4 text-left ring-1 ring-black/[0.07] transition-shadow hover:shadow-[0_4px_16px_rgba(30,50,90,0.12)]";
+  "flex h-[172px] w-[256px] shrink-0 snap-start flex-col rounded-[16px] border border-black/[0.07] bg-card p-4 text-left transition-shadow hover:shadow-[0_4px_16px_rgba(30,50,90,0.12)]";
 
-/** A publisher link-preview that opens the real page in a new tab. */
-function LinkCard({ item }: { item: MediaItem }) {
+/** A publisher link-preview that opens the real page in a new tab. The source
+ *  name + format icon are tinted per category (blue news / green guidance). */
+function LinkCard({ item, accentText }: { item: MediaItem; accentText: string }) {
   const domain = domainOf(item.url);
   return (
     <a href={item.url} target="_blank" rel="noreferrer" className={cardCls}>
+      {/* Source anchor */}
       <div className="flex items-center gap-2">
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-app">
-          <Favicon domain={domain} />
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-app">
+          <Favicon domain={domain} size={18} />
         </span>
         <span className="truncate text-[12px] font-bold uppercase tracking-wide text-brand">
           {item.source}
         </span>
-        <span className="ml-auto shrink-0">
-          <FormatBadge format={item.format} />
-        </span>
       </div>
 
-      <p className="mt-2.5 line-clamp-3 text-[14.5px] font-bold leading-snug text-ink">
+      <p className="mt-2.5 line-clamp-3 text-[15px] font-bold leading-snug text-ink">
         {item.title}
       </p>
 
+      {/* Resource type + timestamp/domain, at the bottom */}
       <div className="mt-auto flex items-center justify-between gap-2 pt-2">
         <span className="truncate text-[12px] text-faint">{item.time ?? domain}</span>
-        <span className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-brand">
-          {item.time ? "Read" : "Open"}
-          <ExternalLink size={13} />
-        </span>
+        <FormatBadge format={item.format} iconClass={accentText} />
       </div>
     </a>
   );
@@ -67,55 +64,28 @@ function LinkCard({ item }: { item: MediaItem }) {
 
 /**
  * A grouped section card with a horizontal carousel of "Latest updates" (news)
- * or "Guidance resources". Cards are real publisher link-previews; desktop gets
- * prev/next arrows.
+ * or "Guidance resources". Cards are real publisher link-previews; scroll
+ * horizontally by touch / trackpad.
  */
 export default function MediaCarousel({
   title,
-  subtitle,
   items,
+  accent,
 }: {
   title: string;
-  subtitle?: string;
   items: MediaItem[];
+  accent: "blue" | "green";
 }) {
-  const scroller = useRef<HTMLDivElement>(null);
-
-  const nudge = (dir: 1 | -1) => {
-    const el = scroller.current;
-    if (el) el.scrollBy({ left: dir * Math.round(el.clientWidth * 0.8), behavior: "smooth" });
-  };
-
+  const accentText = accent === "green" ? "text-[#1a8f5e]" : "text-brand";
   return (
     <section className="rounded-[24px] bg-card p-4 shadow-[0_2px_14px_rgba(30,50,90,0.06)] sm:p-5">
-      <div className="mb-3 flex items-end justify-between gap-3">
-        <div>
-          <h3 className="text-[15px] font-extrabold text-ink">{title}</h3>
-          {subtitle && <p className="mt-0.5 text-[12.5px] text-muted">{subtitle}</p>}
-        </div>
-        <div className="hidden gap-1.5 sm:flex">
-          <button
-            type="button"
-            onClick={() => nudge(-1)}
-            aria-label="Scroll left"
-            className="grid h-8 w-8 place-items-center rounded-full bg-app text-muted transition-colors hover:text-ink"
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <button
-            type="button"
-            onClick={() => nudge(1)}
-            aria-label="Scroll right"
-            className="grid h-8 w-8 place-items-center rounded-full bg-app text-muted transition-colors hover:text-ink"
-          >
-            <ChevronRight size={18} />
-          </button>
-        </div>
-      </div>
+      <h3 className="mb-3 text-[15px] font-extrabold text-ink">{title}</h3>
 
-      <div ref={scroller} className="no-scrollbar flex snap-x gap-3 overflow-x-auto pb-1">
+      {/* -mx-2/px-2/py-2 give the cards' rings + shadows room so the
+          horizontal-scroll clip doesn't cut their borders. */}
+      <div className="no-scrollbar -mx-2 flex snap-x gap-3 overflow-x-auto px-2 py-2">
         {items.map((item) => (
-          <LinkCard key={item.id} item={item} />
+          <LinkCard key={item.id} item={item} accentText={accentText} />
         ))}
       </div>
     </section>

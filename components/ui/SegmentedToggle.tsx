@@ -1,3 +1,8 @@
+"use client";
+
+import { useId } from "react";
+import { motion } from "framer-motion";
+
 interface Option<T extends string> {
   value: T;
   label: string;
@@ -12,6 +17,8 @@ export default function SegmentedToggle<T extends string>({
   value: T;
   onChange: (value: T) => void;
 }) {
+  // Unique per instance so multiple toggles don't share the sliding pill.
+  const layoutId = useId();
   return (
     <div
       role="group"
@@ -26,11 +33,22 @@ export default function SegmentedToggle<T extends string>({
             type="button"
             onClick={() => onChange(opt.value)}
             aria-pressed={active}
-            className={`flex-1 rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${
-              active ? "bg-seg text-white" : "text-muted hover:text-ink"
-            }`}
+            className="relative flex-1 rounded-full px-4 py-2 text-[13px] font-semibold"
           >
-            {opt.label}
+            {active && (
+              <motion.span
+                layoutId={layoutId}
+                transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                className="absolute inset-0 rounded-full bg-seg"
+              />
+            )}
+            <span
+              className={`relative z-10 transition-colors ${
+                active ? "text-white" : "text-muted hover:text-ink"
+              }`}
+            >
+              {opt.label}
+            </span>
           </button>
         );
       })}

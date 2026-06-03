@@ -22,11 +22,14 @@ export default function FormatBadge({
   format,
   extra,
   className = "bg-app text-body",
+  iconClass = "text-brand",
 }: {
   format: string;
   extra?: string;
   /** Override the chip surface — e.g. a frosted style when over an image. */
   className?: string;
+  /** Icon colour, used to tint the chip per category. */
+  iconClass?: string;
 }) {
   const m = meta[format] ?? meta.Article;
   const Icon = m.icon;
@@ -34,7 +37,7 @@ export default function FormatBadge({
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-semibold ${className}`}
     >
-      <Icon size={13} strokeWidth={2.4} className="text-brand" />
+      <Icon size={13} strokeWidth={2.4} className={iconClass} />
       {extra ? `${extra} · ${m.label}` : m.label}
     </span>
   );

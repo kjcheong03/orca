@@ -32,7 +32,7 @@ const en: Dict = {
   "nav.contacts": "Contacts",
   "nav.profile": "Profile",
 
-  "broadcast.title": "Broadcast",
+  "broadcast.title": "Advisories",
 
   "info.environment": "Environment risks",
   "info.signals": "Active health signals",

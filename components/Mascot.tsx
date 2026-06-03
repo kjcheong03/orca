@@ -17,9 +17,12 @@ export type MascotMood = "calm" | "cheer" | "concerned";
 export default function Mascot({
   size = 160,
   variant = "calm",
+  animated = true,
 }: {
   size?: number;
   variant?: MascotMood;
+  /** Set false to render a still mascot (no floating), e.g. as a chat avatar. */
+  animated?: boolean;
 }) {
   const ink = "#1b1b1b";
   const body = "#5b9be8";
@@ -38,9 +41,11 @@ export default function Mascot({
       aria-label="CARA companion"
       xmlns="http://www.w3.org/2000/svg"
       animate={
-        cheer
-          ? { y: [0, -10, 0], rotate: [-3, 3, -3] }
-          : { y: [0, -6, 0], rotate: [-2, 2, -2] }
+        !animated
+          ? undefined
+          : cheer
+            ? { y: [0, -10, 0], rotate: [-3, 3, -3] }
+            : { y: [0, -6, 0], rotate: [-2, 2, -2] }
       }
       transition={{
         duration: cheer ? 1.6 : 2.8,

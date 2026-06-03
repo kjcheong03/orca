@@ -141,7 +141,7 @@ function elderlyStatFor(hazard: Hazard, p: OutbreakPoint): string {
   if (hazard === "covid") {
     const h = Math.round(p.seniorHosp ?? 0);
     const icu = Math.round(p.seniorIcu ?? 0);
-    return `≈${h} seniors (60+) hospitalised/day · ${icu} in ICU`;
+    return `${h} daily hospitalisations · ${icu} in ICU`;
   }
   return "Older adults face a higher risk of severe dengue.";
 }
