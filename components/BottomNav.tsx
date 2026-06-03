@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentType } from "react";
-import { BriefcaseMedical, Info, User } from "lucide-react";
+import { Info, User, UsersRound } from "lucide-react";
 import { SolidPhone } from "@/components/glyphs";
 import { useApp, type Tab } from "@/context/AppContext";
 import { languageCodes } from "@/lib/i18n";
@@ -16,7 +16,7 @@ interface NavItem {
 
 const items: NavItem[] = [
   { tab: "info", icon: Info, key: "nav.info" },
-  { tab: "support", icon: BriefcaseMedical, key: "nav.support" },
+  { tab: "support", icon: UsersRound, key: "nav.support" },
   { tab: "contacts", icon: SolidPhone, key: "nav.contacts" },
   { tab: "profile", icon: User, key: "nav.profile" },
 ];

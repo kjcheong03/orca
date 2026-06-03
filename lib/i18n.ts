@@ -28,7 +28,7 @@ type Dict = Record<string, string>;
 // so a missing translation degrades gracefully instead of rendering blank.
 const en: Dict = {
   "nav.info": "Info",
-  "nav.support": "Support",
+  "nav.support": "Community",
   "nav.contacts": "Contacts",
   "nav.profile": "Profile",
 
@@ -49,8 +49,9 @@ const en: Dict = {
   "support.request": "Request help",
   "support.guides": "Care guides",
 
-  "request.title": "Request help",
+  "request.title": "Community support",
   "request.subtitle": "For non-urgent help during a health advisory.",
+  "request.nonEmergency": "Non-emergency",
   "request.lifeThreateningQ": "Is this life-threatening or urgent right now?",
   "request.yesUrgent": "Yes — get urgent help",
   "request.noContinue": "No, continue",
@@ -106,7 +107,7 @@ const en: Dict = {
 
 const id: Dict = {
   "nav.info": "Info",
-  "nav.support": "Bantuan",
+  "nav.support": "Komunitas",
   "nav.contacts": "Kontak",
   "nav.profile": "Profil",
   "broadcast.title": "Siaran",
@@ -122,8 +123,9 @@ const id: Dict = {
   "badge.precautionary": "PENCEGAHAN",
   "support.request": "Minta bantuan",
   "support.guides": "Panduan perawatan",
-  "request.title": "Minta bantuan",
+  "request.title": "Dukungan komunitas",
   "request.subtitle": "Untuk bantuan tidak mendesak saat ada imbauan kesehatan.",
+  "request.nonEmergency": "Non-darurat",
   "request.lifeThreateningQ": "Apakah ini mengancam jiwa atau mendesak sekarang?",
   "request.yesUrgent": "Ya — minta bantuan darurat",
   "request.noContinue": "Tidak, lanjutkan",
@@ -174,7 +176,7 @@ const id: Dict = {
 
 const ms: Dict = {
   "nav.info": "Info",
-  "nav.support": "Bantuan",
+  "nav.support": "Komuniti",
   "nav.contacts": "Hubungi",
   "nav.profile": "Profil",
   "broadcast.title": "Siaran",
@@ -190,8 +192,9 @@ const ms: Dict = {
   "badge.precautionary": "LANGKAH BERJAGA",
   "support.request": "Minta bantuan",
   "support.guides": "Panduan penjagaan",
-  "request.title": "Minta bantuan",
+  "request.title": "Sokongan komuniti",
   "request.subtitle": "Untuk bantuan tidak mendesak semasa nasihat kesihatan.",
+  "request.nonEmergency": "Bukan kecemasan",
   "request.lifeThreateningQ": "Adakah ini mengancam nyawa atau mendesak sekarang?",
   "request.yesUrgent": "Ya — dapatkan bantuan segera",
   "request.noContinue": "Tidak, teruskan",
@@ -242,7 +245,7 @@ const ms: Dict = {
 
 const zh: Dict = {
   "nav.info": "资讯",
-  "nav.support": "支援",
+  "nav.support": "社区",
   "nav.contacts": "联络",
   "nav.profile": "档案",
   "broadcast.title": "广播",
@@ -258,8 +261,9 @@ const zh: Dict = {
   "badge.precautionary": "预防",
   "support.request": "请求协助",
   "support.guides": "护理指南",
-  "request.title": "请求协助",
+  "request.title": "社区支援",
   "request.subtitle": "在健康警示期间获取非紧急协助。",
+  "request.nonEmergency": "非紧急",
   "request.lifeThreateningQ": "现在是否危及生命或紧急？",
   "request.yesUrgent": "是 — 获取紧急协助",
   "request.noContinue": "否，继续",
@@ -309,7 +313,7 @@ const zh: Dict = {
 
 const tl: Dict = {
   "nav.info": "Impormasyon",
-  "nav.support": "Tulong",
+  "nav.support": "Komunidad",
   "nav.contacts": "Kontak",
   "nav.profile": "Profile",
   "broadcast.title": "Pahayag",
@@ -325,8 +329,9 @@ const tl: Dict = {
   "badge.precautionary": "PAG-IINGAT",
   "support.request": "Humingi ng tulong",
   "support.guides": "Mga gabay sa pag-aalaga",
-  "request.title": "Humingi ng tulong",
+  "request.title": "Suporta ng komunidad",
   "request.subtitle": "Para sa hindi agarang tulong sa panahon ng babala sa kalusugan.",
+  "request.nonEmergency": "Hindi emergency",
   "request.lifeThreateningQ": "Nakamamatay o agaran ba ito ngayon?",
   "request.yesUrgent": "Oo — kumuha ng agarang tulong",
   "request.noContinue": "Hindi, magpatuloy",
@@ -377,7 +382,7 @@ const tl: Dict = {
 
 const my: Dict = {
   "nav.info": "သတင်း",
-  "nav.support": "အကူအညီ",
+  "nav.support": "ရပ်ရွာ",
   "nav.contacts": "ဆက်သွယ်ရန်",
   "nav.profile": "ပရိုဖိုင်",
   "broadcast.title": "ထုတ်လွှင့်ချက်",
@@ -393,7 +398,7 @@ const my: Dict = {
   "badge.precautionary": "ကြိုတင်ကာကွယ်",
   "support.request": "အကူအညီတောင်းရန်",
   "support.guides": "စောင့်ရှောက်မှု လမ်းညွှန်",
-  "request.title": "အကူအညီတောင်းရန်",
+  "request.title": "ရပ်ရွာ အကူအညီ",
   "request.lifeThreateningQ": "ဒါ အသက်အန္တရာယ် သို့မဟုတ် အရေးပေါ်ဖြစ်နေသလား?",
   "request.yesUrgent": "ဟုတ်ကဲ့ — အရေးပေါ် အကူအညီရယူရန်",
   "request.noContinue": "မဟုတ်ပါ၊ ဆက်လုပ်ရန်",
@@ -419,6 +424,7 @@ const my: Dict = {
   "emergency.whatToSay": "ဘာပြောရမလဲ",
   "emergency.doIfInstructed": "ညွှန်ကြားလျှင် လုပ်ပါ",
   "request.subtitle": "ကျန်းမာရေး သတိပေးချက် အတွင်း အရေးမကြီးသော အကူအညီအတွက်။",
+  "request.nonEmergency": "အရေးပေါ်မဟုတ်",
   "request.escalationBanner": "အသက်အန္တရာယ်ရှိသလား? အရေးပေါ် တိုးမြှင့်အကူအညီကို သုံးပါ",
   "request.careRecipient": "စောင့်ရှောက်ခံရသူ:",
   "request.relatedAdvisory": "သက်ဆိုင်ရာ သတိပေးချက် (ရွေးချယ်နိုင်)",

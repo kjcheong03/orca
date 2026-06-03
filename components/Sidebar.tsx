@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentType } from "react";
-import { BriefcaseMedical, ChevronRight, Globe, Info, Megaphone, User } from "lucide-react";
+import { ChevronRight, Globe, Info, Megaphone, User, UsersRound } from "lucide-react";
 import Mascot from "@/components/Mascot";
 import { SolidPhone } from "@/components/glyphs";
 import { useApp, type Tab } from "@/context/AppContext";
@@ -12,7 +12,7 @@ type IconType = ComponentType<{ size?: number; strokeWidth?: number; className?:
 
 const items: { tab: Tab; icon: IconType; key: string }[] = [
   { tab: "info", icon: Info, key: "nav.info" },
-  { tab: "support", icon: BriefcaseMedical, key: "nav.support" },
+  { tab: "support", icon: UsersRound, key: "nav.support" },
   { tab: "contacts", icon: SolidPhone, key: "nav.contacts" },
   { tab: "profile", icon: User, key: "nav.profile" },
 ];
