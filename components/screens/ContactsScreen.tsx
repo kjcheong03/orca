@@ -1,318 +1,175 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Car,
-  ChevronLeft,
-  ChevronRight,
-  Frown,
-  Heart,
-  Meh,
-  Phone,
-  PersonStanding,
-  Wind,
-  type LucideIcon,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { HeartPulse, MapPin, Pill, X } from "lucide-react";
+
+// Slim, solid phone handset (Material-style) — no signal waves.
+function SolidPhone({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden xmlns="http://www.w3.org/2000/svg">
+      <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.6 21 3 13.4 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+    </svg>
+  );
+}
+import { CareProfileGlyph, SmsAlertGlyph } from "@/components/glyphs";
 import { useApp } from "@/context/AppContext";
-import { ambulance, contacts, emergencyReasons, patient } from "@/lib/data";
-import type { Contact, EmergencyReason } from "@/lib/types";
-
-const reasonIcons: Record<string, LucideIcon> = {
-  car: Car,
-  heart: Heart,
-  lungs: Wind,
-  "user-x": Frown,
-  "person-fall": PersonStanding,
-  "user-sleep": Meh,
-};
-
-type Step = "list" | "reason" | "questions" | "call";
-type Target = { kind: "contact"; contact: Contact } | { kind: "ambulance" };
-type Answer = "Yes" | "No" | "Not sure";
+import { ambulance, contacts, patient } from "@/lib/data";
 
 export default function ContactsScreen() {
   const { t } = useApp();
-  const [step, setStep] = useState<Step>("list");
-  const [target, setTarget] = useState<Target | null>(null);
-  const [reason, setReason] = useState<EmergencyReason | null>(null);
-  const [awake, setAwake] = useState<Answer | null>(null);
-  const [breathing, setBreathing] = useState<Answer | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
 
-  function reset() {
-    setStep("list");
-    setTarget(null);
-    setReason(null);
-    setAwake(null);
-    setBreathing(null);
-  }
-
-  function back() {
-    if (step === "call") setStep("questions");
-    else if (step === "questions") setStep("reason");
-    else if (step === "reason") reset();
-  }
-
-  // ---------------------------------------------------------------- list
-  if (step === "list") {
-    return (
-      <div className="mx-auto flex min-h-[78dvh] w-full max-w-md flex-col px-5 pb-8 pt-6 lg:min-h-[60vh] lg:pt-10">
-        <h1 className="display text-center text-[23px] text-ink">
-          {t("contacts.title")}
-        </h1>
-        <p className="mt-1 text-center text-[14px] text-muted">
-          {t("contacts.subtitle")}
-        </p>
-
-        <div className="mt-7 space-y-4">
-          {contacts.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => {
-                setTarget({ kind: "contact", contact: c });
-                setStep("reason");
-              }}
-              className="flex w-full items-center gap-4 rounded-[20px] bg-white p-4 text-left shadow-[0_2px_14px_rgba(30,50,90,0.06)]"
-            >
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-danger-soft text-[15px] font-bold text-danger">
-                {c.initials}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[16px] font-bold text-ink">
-                  {c.name}
-                </span>
-                <span className="flex items-center gap-1.5 text-[14px] text-muted">
-                  <Phone size={16} /> {c.phone}
-                </span>
-              </span>
-              <ChevronRight className="shrink-0 text-faint" size={24} />
-            </button>
-          ))}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            setTarget({ kind: "ambulance" });
-            setStep("reason");
-          }}
-          className="mt-auto flex items-center justify-center gap-3 rounded-full bg-danger px-6 py-5 text-[16px] font-bold text-white shadow-[0_10px_24px_rgba(229,84,78,0.4)]"
-        >
-          <Phone size={22} /> {t("contacts.needAmbulance")}
-        </button>
-      </div>
-    );
-  }
-
-  // ------------------------------------------------------------- reason
-  if (step === "reason") {
-    return (
-      <div className="mx-auto w-full max-w-2xl px-5 pb-8 pt-5 lg:pt-8">
-        <BackBtn onClick={back} />
-        <h1 className="display mt-4 text-[26px] text-ink">
-          {t("emergency.whatHappened")}
-        </h1>
-        <div className="mt-7 grid grid-cols-2 gap-4 sm:grid-cols-3">
-          {emergencyReasons.map((r) => {
-            const Icon = reasonIcons[r.icon] ?? Heart;
-            return (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => {
-                  setReason(r);
-                  setStep("questions");
-                }}
-                className="flex flex-col items-center rounded-[20px] bg-white p-5 shadow-[0_2px_14px_rgba(30,50,90,0.06)]"
-              >
-                <span className="flex h-20 w-20 items-center justify-center rounded-[20px] bg-danger">
-                  <Icon size={34} className="text-white" strokeWidth={2.2} />
-                </span>
-                <span className="mt-4 text-[16px] font-bold text-ink">
-                  {t(`reason.${r.id}`)}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  // ---------------------------------------------------------- questions
-  if (step === "questions") {
-    return (
-      <div className="mx-auto flex min-h-[78dvh] w-full max-w-md flex-col px-5 pb-8 pt-5 lg:min-h-0 lg:pt-8">
-        <BackBtn onClick={back} />
-        <h1 className="display mt-4 text-[26px] text-ink">
-          {t("emergency.twoQuestions")}
-        </h1>
-        <p className="mt-3 text-[14px] text-muted">
-          {t("emergency.twoQuestionsSub")}
-        </p>
-
-        <div className="mt-6 space-y-4">
-          <QuestionCard
-            label={t("emergency.isAwake")}
-            value={awake}
-            onChange={setAwake}
-          />
-          <QuestionCard
-            label={t("emergency.isBreathing")}
-            value={breathing}
-            onChange={setBreathing}
-          />
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setStep("call")}
-          className="mt-auto rounded-full bg-danger py-5 text-[16px] font-bold text-white shadow-[0_10px_24px_rgba(229,84,78,0.4)]"
-        >
-          {t("common.continue")}
-        </button>
-      </div>
-    );
-  }
-
-  // --------------------------------------------------------------- call
-  const isAmbulance = target?.kind === "ambulance";
-  const calleeName = isAmbulance
-    ? `995 · ${ambulance.label.split(" · ")[1] ?? "Ambulance"}`
-    : target?.contact.name ?? "";
-  const telHref = isAmbulance
-    ? "tel:995"
-    : `tel:${target?.contact.phone.replace(/\s/g, "")}`;
+  const primary = contacts[0];
+  const smsBody = `ALERT — ${patient.name} (${patient.sex}, ${patient.age}) may need help at ${patient.address}. Conditions: ${patient.conditions.join(", ")}. Please call to check on her.`;
+  const smsHref = `sms:${primary.phone.replace(/\s/g, "")}?&body=${encodeURIComponent(smsBody)}`;
 
   return (
-    <div className="mx-auto w-full max-w-md px-5 pb-10 pt-5 lg:pt-8">
-      <BackBtn onClick={back} />
-
-      <p className="mt-3 text-center text-[13px] font-semibold uppercase tracking-wider text-faint">
-        {t("emergency.calling")}
-      </p>
-      <h1 className="display mt-1 text-center text-[24px] text-ink">
-        {calleeName}
-      </h1>
-
-      <div className="mt-3 flex justify-center">
-        <span className="rounded-full bg-danger-soft px-5 py-2 text-[14px] font-semibold text-danger">
-          {patient.name} · {reason ? t(`reason.${reason.id}`) : ""}
-        </span>
-      </div>
-      <p className="mt-3 text-center text-[14px] text-muted">
-        {t("emergency.pressToCall")}
-      </p>
-
-      {/* Call button */}
-      <div className="relative my-7 flex justify-center">
-        <span className="absolute top-1/2 left-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-danger [animation:cara-pulse_2s_ease-out_infinite]" />
-        <span className="absolute top-1/2 left-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-danger [animation:cara-pulse_2s_ease-out_infinite_0.6s]" />
-        <a
-          href={telHref}
-          className="relative flex h-36 w-36 items-center justify-center rounded-full bg-danger shadow-[0_16px_36px_rgba(229,84,78,0.45)]"
-          aria-label={`Call ${calleeName}`}
+    <div className="mx-auto w-full max-w-md space-y-5 px-5 pb-8 pt-6 lg:pt-8">
+      {/* Two key actions */}
+      <div className="grid grid-cols-2 gap-3">
+        <motion.button
+          type="button"
+          onClick={() => setProfileOpen(true)}
+          whileHover={{ y: -3 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 400, damping: 22 }}
+          className="flex flex-col items-center gap-1 rounded-2xl bg-white px-3 py-3.5 shadow-[0_2px_14px_rgba(30,50,90,0.06)] hover:shadow-[0_8px_22px_rgba(30,50,90,0.12)]"
         >
-          <Phone size={48} className="text-white" fill="white" />
-        </a>
+          <CareProfileGlyph size={34} />
+          <span className="text-[13px] font-semibold text-ink">Care Profile</span>
+        </motion.button>
+        <motion.a
+          href={smsHref}
+          whileHover={{ y: -3 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 400, damping: 22 }}
+          className="flex flex-col items-center gap-1 rounded-2xl bg-white px-3 py-3.5 shadow-[0_2px_14px_rgba(30,50,90,0.06)] hover:shadow-[0_8px_22px_rgba(30,50,90,0.12)]"
+        >
+          <SmsAlertGlyph size={34} />
+          <span className="text-[13px] font-semibold text-ink">SMS Alert</span>
+        </motion.a>
       </div>
 
-      {/* What to say */}
-      <section className="rounded-[20px] bg-white p-5 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
-        <p className="text-[13px] font-bold uppercase tracking-wider text-danger">
-          {t("emergency.whatToSay")}
-        </p>
-        <p className="mt-3 text-[14px] leading-relaxed text-body">
-          {t("emergency.speakSlowly")}
-        </p>
-        <ul className="mt-1 space-y-1 text-[14px] leading-relaxed text-body">
-          <li>
-            • {t("emergency.who")}: {patient.name}, {patient.age} years old,{" "}
-            {patient.sex.toLowerCase()}
-          </li>
-          <li>
-            • {t("emergency.what")}: {reason?.statement}
-          </li>
-          <li>
-            • {t("emergency.where")}: {patient.address}
-          </li>
-          {awake && (
-            <li>
-              • {t("emergency.awake")}: {awake}
-            </li>
-          )}
-          {breathing && (
-            <li>
-              • {t("emergency.breathing")}: {breathing}
-            </li>
-          )}
-        </ul>
+      {/* Emergency contacts */}
+      <section className="pt-3">
+        <h2 className="mb-3 px-1 text-[16px] font-bold text-ink">
+          {t("contacts.title")}
+        </h2>
+        <div className="overflow-hidden rounded-2xl bg-white shadow-[0_2px_12px_rgba(30,50,90,0.06)]">
+          {contacts.map((c, i) => (
+            <a
+              key={c.id}
+              href={`tel:${c.phone.replace(/\s/g, "")}`}
+              className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-app/60 ${
+                i > 0 ? "border-t border-black/10" : ""
+              }`}
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[14px] font-bold leading-tight text-ink">
+                  {c.name}
+                  <span className="ml-2 text-[12px] font-normal text-muted">
+                    {c.relation}
+                  </span>
+                </span>
+                <span className="mt-0.5 block text-[12px] leading-tight text-muted">
+                  {c.phone}
+                </span>
+              </span>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#5b9be8] text-white">
+                <SolidPhone size={17} />
+              </span>
+            </a>
+          ))}
+        </div>
       </section>
 
-      {isAmbulance && (
-        <section className="mt-4 rounded-[20px] bg-white p-5 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
-          <p className="text-[13px] font-bold uppercase tracking-wider text-danger">
-            {t("emergency.doIfInstructed")}
-          </p>
-          <ul className="mt-3 space-y-1.5 text-[14px] leading-relaxed text-body">
-            <li>• Stay on the line — do not hang up.</li>
-            <li>• If they guide you through CPR or first aid, follow each step.</li>
-            <li>• Unlock the door and clear a path for the paramedics.</li>
-          </ul>
-        </section>
-      )}
+      {/* 995 */}
+      <a
+        href={`tel:${ambulance.phone}`}
+        className="mx-auto flex w-fit items-center justify-center gap-2.5 rounded-full bg-danger px-7 py-3.5 text-[15px] font-bold text-white transition-transform active:scale-[0.98]"
+      >
+        <SolidPhone size={18} /> {t("contacts.needAmbulance")}
+      </a>
+
+      {profileOpen && <CareProfileSheet onClose={() => setProfileOpen(false)} />}
     </div>
   );
 }
 
-function BackBtn({ onClick }: { onClick: () => void }) {
+function CareProfileSheet({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label="Back"
-      className="flex h-9 w-9 items-center justify-center rounded-full text-ink hover:bg-black/5"
+    <div
+      className="fade-enter fixed inset-0 z-40 flex items-end justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Care profile"
     >
-      <ChevronLeft size={28} />
-    </button>
+      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/40" />
+      <div className="sheet-enter relative w-full max-w-md rounded-t-[28px] bg-app p-5 pb-8">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="display text-[20px] text-ink">Care profile</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm"
+          >
+            <X size={18} className="text-ink" />
+          </button>
+        </div>
+
+        <div className="overflow-hidden rounded-[22px] bg-white shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
+          <div className="flex items-center gap-3.5 bg-brand px-5 py-4 text-white">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/20 text-[18px] font-bold">
+              {patient.initials}
+            </span>
+            <div className="min-w-0">
+              <p className="text-[18px] font-bold leading-tight">{patient.name}</p>
+              <p className="text-[13px] text-white/85">
+                {patient.sex} · {patient.age}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4 px-5 py-5">
+            <ProfileRow icon={<MapPin size={18} />} label="Address">
+              {patient.address}
+            </ProfileRow>
+            <ProfileRow icon={<HeartPulse size={18} />} label="Conditions">
+              {patient.conditions.join(", ")}
+            </ProfileRow>
+            <ProfileRow icon={<Pill size={18} />} label="Emergency medicine">
+              {patient.emergencyMedicine.map((m) => `${m.name} — ${m.dose}`).join("; ")}
+            </ProfileRow>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
-function QuestionCard({
+function ProfileRow({
+  icon,
   label,
-  value,
-  onChange,
+  children,
 }: {
+  icon: React.ReactNode;
   label: string;
-  value: Answer | null;
-  onChange: (a: Answer) => void;
+  children: React.ReactNode;
 }) {
-  const { t } = useApp();
-  const options: { v: Answer; label: string }[] = [
-    { v: "Yes", label: t("common.yes") },
-    { v: "No", label: t("common.no") },
-    { v: "Not sure", label: t("common.notSure") },
-  ];
   return (
-    <div className="rounded-[20px] bg-white p-5 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
-      <p className="text-[16px] font-bold text-ink">{label}</p>
-      <div className="mt-4 grid grid-cols-3 gap-3">
-        {options.map((o) => {
-          const active = value === o.v;
-          return (
-            <button
-              key={o.v}
-              type="button"
-              aria-pressed={active}
-              onClick={() => onChange(o.v)}
-              className={`rounded-2xl py-3.5 text-[14px] font-semibold transition-colors ${
-                active ? "bg-danger text-white" : "bg-subtle text-body"
-              }`}
-            >
-              {o.label}
-            </button>
-          );
-        })}
+    <div className="flex gap-3">
+      <span className="mt-0 shrink-0 text-brand">{icon}</span>
+      <div className="min-w-0">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-faint">{label}</p>
+        <div className="mt-0 text-[14px] leading-snug text-ink">{children}</div>
       </div>
     </div>
   );

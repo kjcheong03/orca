@@ -23,7 +23,7 @@
   --color-warn: #e8730c; /* "unhealthy" / heat amber */
   --color-warn-soft: #fdeede;
 
-  --color-app: #e8eef8; /* info / support page background */
+  --color-app: #e3f2fd; /* app background — sky blue light */
   --color-app-2: #ebeef2; /* contacts / emergency page background */
   --color-card: #ffffff;
   --color-surface-2: #f4f6fb; /* "Why?" panel / inset surfaces */
@@ -62,7 +62,7 @@ body {
   font-family: var(--font-sans);
   color: var(--color-ink);
   background:
-    radial-gradient(1200px 800px at 50% -10%, #d7e0f3 0%, #c7d2ea 45%, #b9c5e2 100%);
+    radial-gradient(1200px 800px at 50% -10%, #eaf6fe 0%, #d6ecfb 55%, #cbe6fa 100%);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }

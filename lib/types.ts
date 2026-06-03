@@ -66,6 +66,7 @@ export interface Contact {
   id: string;
   initials: string;
   name: string;
+  relation: string;
   phone: string;
   role: "family" | "clinic";
 }

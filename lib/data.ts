@@ -146,14 +146,16 @@ export const contacts: Contact[] = [
   {
     id: "son",
     initials: "WM",
-    name: "Mr Tan Wei Ming (son)",
+    name: "Mr Tan Wei Ming",
+    relation: "Son",
     phone: "+65 9123 4567",
     role: "family",
   },
   {
     id: "clinic",
     initials: "DL",
-    name: "Dr Lim — Clinic",
+    name: "Dr Lim",
+    relation: "Clinic",
     phone: "+65 6789 0123",
     role: "clinic",
   },

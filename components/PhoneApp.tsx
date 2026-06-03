@@ -19,10 +19,9 @@ const screens: { tab: Tab; Component: () => React.ReactNode }[] = [
 
 function Shell() {
   const { tab } = useApp();
-  const bg = tab === "contacts" ? "bg-app-2" : "bg-app";
 
   return (
-    <div className={`min-h-[100dvh] ${bg} transition-colors`}>
+    <div className="min-h-[100dvh] bg-app">
       <div className="lg:flex">
         <Sidebar />
         <div className="min-w-0 flex-1">
