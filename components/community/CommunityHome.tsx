@@ -70,7 +70,7 @@ export default function CommunityHome({ onStart }: { onStart: () => void }) {
           <Mascot size={52} variant="calm" animated={false} />
         </span>
         <div className="min-w-0">
-          <h1 className="text-[20px] font-extrabold leading-tight text-ink">Community help</h1>
+          <h1 className="text-[20px] font-extrabold leading-tight text-ink">Community Support</h1>
         </div>
       </div>
 

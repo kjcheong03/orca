@@ -6,8 +6,10 @@ import {
   Check,
   ChevronDown,
   HeartPulse,
+  IdCard,
   MapPin,
   MessageCircle,
+  MessageSquareWarning,
   Mic,
   Pencil,
   Pill,
@@ -15,7 +17,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { SmsAlertGlyph, SolidPhone } from "@/components/glyphs";
+import { SolidPhone } from "@/components/glyphs";
 import { useApp } from "@/context/AppContext";
 import { ambulance, contacts, patient } from "@/lib/data";
 import type { Contact } from "@/lib/types";
@@ -37,6 +39,7 @@ export default function ContactsScreen() {
   const [formMode, setFormMode] = useState<{ type: "add" } | { type: "edit"; contact: Contact } | null>(null);
   const [actionsFor, setActionsFor] = useState<Contact | null>(null);
   const [messageFor, setMessageFor] = useState<Contact | null>(null);
+  const [careOpen, setCareOpen] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -66,25 +69,54 @@ export default function ContactsScreen() {
 
   return (
     <div className="mx-auto w-full max-w-md space-y-5 px-5 pb-8 pt-6 lg:pt-8">
-      {/* Care profile */}
+      {/* Emergency Card — expandable, revealing the full care card */}
       <div className="overflow-hidden rounded-[22px] bg-white shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
-        <div className="bg-brand px-5 py-4 text-white">
-          <p className="text-[18px] font-bold leading-tight">{patient.name}</p>
-          <p className="mt-0.5 text-[15px] text-white/90">
-            {patient.sex} · {patient.age}
-          </p>
-        </div>
-        <div className="space-y-4 px-5 py-5">
-          <ProfileRow icon={<MapPin size={18} />} label="Address">
-            {patient.address}
-          </ProfileRow>
-          <ProfileRow icon={<HeartPulse size={18} />} label="Conditions">
-            {patient.conditions.join(", ")}
-          </ProfileRow>
-          <ProfileRow icon={<Pill size={18} />} label="Emergency medicine">
-            {patient.emergencyMedicine.map((m) => `${m.name} — ${m.dose}`).join("; ")}
-          </ProfileRow>
-        </div>
+        <button
+          type="button"
+          onClick={() => setCareOpen((o) => !o)}
+          aria-expanded={careOpen}
+          className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
+        >
+          <IdCard size={22} className="text-brand" />
+          <span className="flex-1 text-[15px] font-bold text-ink">Emergency Card</span>
+          <ChevronDown
+            size={18}
+            className={`text-faint transition-transform ${careOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+        <AnimatePresence initial={false}>
+          {careOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden border-t border-black/[0.06]"
+            >
+              <div className="p-4">
+                <div className="overflow-hidden rounded-[18px] ring-1 ring-black/[0.07]">
+                  <div className="bg-brand px-5 py-4 text-white">
+                    <p className="text-[18px] font-bold leading-tight">{patient.name}</p>
+                    <p className="mt-0.5 text-[15px] text-white/90">
+                      {patient.sex} · {patient.age}
+                    </p>
+                  </div>
+                  <div className="space-y-4 px-5 py-5">
+                    <ProfileRow icon={<MapPin size={18} />} label="Address">
+                      {patient.address}
+                    </ProfileRow>
+                    <ProfileRow icon={<HeartPulse size={18} />} label="Conditions">
+                      {patient.conditions.join(", ")}
+                    </ProfileRow>
+                    <ProfileRow icon={<Pill size={18} />} label="Emergency medicine">
+                      {patient.emergencyMedicine.map((m) => `${m.name} — ${m.dose}`).join("; ")}
+                    </ProfileRow>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Alert message — view / edit then send */}
@@ -95,7 +127,7 @@ export default function ContactsScreen() {
           aria-expanded={alertOpen}
           className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
         >
-          <SmsAlertGlyph size={28} />
+          <MessageSquareWarning size={22} className="text-brand" />
           <span className="flex-1 text-[15px] font-bold text-ink">Alert message</span>
           <ChevronDown
             size={18}
@@ -144,13 +176,15 @@ export default function ContactsScreen() {
         </AnimatePresence>
       </div>
 
-      {/* 995 */}
-      <a
-        href={`tel:${ambulance.phone}`}
-        className="flex w-full items-center justify-center gap-2.5 rounded-full bg-danger px-7 py-3.5 text-[15px] font-bold text-white transition-transform active:scale-[0.98]"
-      >
-        <SolidPhone size={18} /> {t("contacts.needAmbulance")}
-      </a>
+      {/* 995 — divider with extra breathing room above the button */}
+      <div className="border-t border-black/[0.08] pt-7">
+        <a
+          href={`tel:${ambulance.phone}`}
+          className="flex w-full items-center justify-center gap-2.5 rounded-full bg-danger px-7 py-3.5 text-[15px] font-bold text-white transition-transform active:scale-[0.98]"
+        >
+          <SolidPhone size={18} /> {t("contacts.needAmbulance")}
+        </a>
+      </div>
 
       {/* Emergency Contacts */}
       <section className="pt-1">

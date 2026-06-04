@@ -28,7 +28,7 @@ type Dict = Record<string, string>;
 // so a missing translation degrades gracefully instead of rendering blank.
 const en: Dict = {
   "nav.info": "Info",
-  "nav.support": "Community",
+  "nav.support": "Support",
   "nav.contacts": "Contacts",
   "nav.profile": "Profile",
 
