@@ -10,6 +10,9 @@ export interface ContactInfo {
   email: string;
   careRecipientName: string;
   generalArea: string;
+  address: string;
+  postalCode: string;
+  accessNotes: string;
   relationship: string;
 }
 
@@ -21,10 +24,14 @@ const inputBase =
 export default function ContactDetails({
   contact,
   errors,
+  showAddress,
+  showArea,
   onChange,
 }: {
   contact: ContactInfo;
   errors: Record<string, string>;
+  showAddress: boolean;
+  showArea: boolean;
   onChange: (key: keyof ContactInfo, value: string) => void;
 }) {
   const text = (key: keyof ContactInfo, label: string, placeholder: string, required?: boolean) => {
@@ -49,9 +56,7 @@ export default function ContactDetails({
 
   return (
     <section className="rounded-[22px] bg-card p-5 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
-      <p className="text-[12px] font-bold uppercase tracking-wider text-faint">Contact &amp; basic details</p>
-
-      <div className="mt-4 space-y-4">
+      <div className="space-y-4">
         {text("caregiverName", "Your name", "e.g. Chloe", true)}
         {text("contactNumber", "Contact number", "+65 8123 4567", true)}
 
@@ -84,31 +89,43 @@ export default function ContactDetails({
 
         {text("careRecipientName", "Care recipient's name", "e.g. Madam Tan", true)}
 
-        <div id={contactFieldId("generalArea")} className="scroll-mt-24">
-          <label className={`mb-1.5 flex items-center gap-1 text-[13px] font-semibold ${errors.generalArea ? "text-danger" : "text-ink"}`}>
-            General area
-            <span className="text-danger">*</span>
-          </label>
-          <div className="relative">
-            <select
-              value={contact.generalArea}
-              onChange={(e) => onChange("generalArea", e.target.value)}
-              className={`${inputBase} appearance-none pr-9 ${errors.generalArea ? "border-danger" : "border-black/10"}`}
-            >
-              <option value="" disabled>
-                Select…
-              </option>
-              {AREAS.map((a) => (
-                <option key={a} value={a}>
-                  {a}
+        {showArea && (
+          <div id={contactFieldId("generalArea")} className="scroll-mt-24">
+            <label className={`mb-1.5 flex items-center gap-1 text-[13px] font-semibold ${errors.generalArea ? "text-danger" : "text-ink"}`}>
+              General area
+              <span className="text-danger">*</span>
+            </label>
+            <div className="relative">
+              <select
+                value={contact.generalArea}
+                onChange={(e) => onChange("generalArea", e.target.value)}
+                className={`${inputBase} appearance-none pr-9 ${errors.generalArea ? "border-danger" : "border-black/10"}`}
+              >
+                <option value="" disabled>
+                  Select…
                 </option>
-              ))}
-            </select>
-            <ChevronDown size={18} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-faint" />
+                {AREAS.map((a) => (
+                  <option key={a} value={a}>
+                    {a}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={18} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-faint" />
+            </div>
+            <p className="mt-1 text-[12px] text-faint">Used to find partners that cover your area.</p>
+            {errors.generalArea && <p className="mt-1 text-[12px] font-medium text-danger">{errors.generalArea}</p>}
           </div>
-          <p className="mt-1 text-[12px] text-faint">Used to find partners that cover your area.</p>
-          {errors.generalArea && <p className="mt-1 text-[12px] font-medium text-danger">{errors.generalArea}</p>}
-        </div>
+        )}
+
+        {showAddress && (
+          <>
+            <hr className="border-black/[0.07]" />
+            {text("address", "Address", "Block, street & unit no.", true)}
+            {text("postalCode", "Postal code", "560123", true)}
+            {text("accessNotes", "Access notes (optional)", "Gate code, lift access, etc.")}
+            <p className="-mt-1.5 text-[12px] text-faint">Used for delivery and home visits.</p>
+          </>
+        )}
 
         {text("relationship", "Relationship to care recipient (optional)", "e.g. Daughter")}
       </div>

@@ -21,7 +21,7 @@ import {
 const shortName = patient.name.split(" ").slice(0, 2).join(" "); // "Madam Tan"
 const LINKED_TOPIC = "Dengue alert";
 
-const STEPS = ["Choose help", "Details", "Match & review"] as const;
+const STEPS = ["Choose help", "Request details", "Personal details", "Match & review"] as const;
 
 type FieldValue = string | string[] | boolean | ItemQuantity[] | undefined;
 
@@ -34,48 +34,80 @@ function withDefaults(type: SupportTypeId, task: TaskState): TaskState {
     const existing = Array.isArray(d.itemsNeeded) ? (d.itemsNeeded as ItemQuantity[]) : [];
     d.itemsNeeded = subtypes.map((item) => {
       const prev = existing.find((e) => e.item === item);
-      if (item === "Other item") {
-        // Free-text item — partner confirms availability; not stock-matched.
-        return {
-          item,
-          quantity: prev?.quantity ?? "",
-          customItem: prev?.customItem ?? "",
-          partnerReviewNeeded: true,
-        };
-      }
       return prev ?? { item, quantity: "" };
     });
   }
   if (type === "food") {
-    if (subtypes.includes("Cooked meals")) {
-      if (d.dietaryRestrictions === undefined) d.dietaryRestrictions = "None";
-      if (d.portionsPerMeal === undefined) d.portionsPerMeal = "1";
+    if (subtypes.includes("Cooked meals") && d.portionsPerMeal === undefined) {
+      d.portionsPerMeal = "1";
     }
-    if (subtypes.includes("Food pack / rations") && d.foodRestrictions === undefined)
-      d.foodRestrictions = ["None"];
   }
   if (type === "transport") {
-    if (d.wheelchairRequired === undefined)
-      d.wheelchairRequired = subtypes.includes("Wheelchair-friendly transport");
-    if (d.caregiverAccompanying === undefined)
-      d.caregiverAccompanying = subtypes.includes("Caregiver-accompanied trip");
-    if (d.returnTripNeeded === undefined)
-      d.returnTripNeeded = subtypes.includes("Return trip");
+    if (d.wheelchairRequired === undefined) d.wheelchairRequired = false;
     if (d.escortNeeded === undefined) d.escortNeeded = false;
+    if (d.caregiverAccompanying === undefined) d.caregiverAccompanying = false;
+    if (d.returnTripNeeded === undefined) d.returnTripNeeded = false;
   }
   return { subtypes, details: d };
 }
 
-function StepIndicator({ step, submitted }: { step: number; submitted: boolean }) {
+/** Infer the matching area from a Singapore postal code (sector-based). */
+function inferArea(postalCode: string): string {
+  const p = postalCode.trim();
+  if (p.startsWith("31")) return "Toa Payoh";
+  if (p.startsWith("57")) return "Bishan";
+  if (p.startsWith("56")) return "Ang Mo Kio";
+  return "Ang Mo Kio";
+}
+
+/** Whether any selected task needs someone to come to the home (→ ask address). */
+function needsAddress(tasks: DraftTasks): boolean {
+  for (const [type, t] of Object.entries(tasks) as [SupportTypeId, TaskState][]) {
+    if (!t || t.subtypes.length === 0) continue;
+    const d = t.details;
+    if (type === "supplies") {
+      if (d.suppliesFulfilment === "Delivery if available" || d.suppliesFulfilment === "Either is okay")
+        return true;
+    } else if (type === "food") {
+      if (t.subtypes.includes("Cooked meals")) return true;
+      if (
+        t.subtypes.includes("Food pack / rations") &&
+        (d.fulfilmentMethod === "Doorstep delivery" || d.fulfilmentMethod === "Either is okay")
+      )
+        return true;
+    } else if (type === "welfare") {
+      if (d.checkMethod === "Home visit" || d.checkMethod === "Either is okay") return true;
+    }
+  }
+  return false;
+}
+
+function StepIndicator({
+  step,
+  submitted,
+  maxReachable,
+  onStepClick,
+}: {
+  step: number;
+  submitted: boolean;
+  maxReachable: number;
+  onStepClick: (n: number) => void;
+}) {
   return (
     <div className="flex items-center justify-center gap-1.5">
       {STEPS.map((label, i) => {
         const n = i + 1;
         const done = n < step || (submitted && n === STEPS.length);
         const current = n === step && !done;
+        const clickable = !submitted && n <= maxReachable && n !== step;
         return (
           <div key={label} className="flex items-center gap-1.5">
-            <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onStepClick(n)}
+              disabled={!clickable}
+              className={`flex items-center gap-2 ${clickable ? "cursor-pointer" : "cursor-default"}`}
+            >
               <span
                 className={`grid h-7 w-7 place-items-center rounded-full text-[12px] font-bold transition-colors ${
                   current
@@ -94,7 +126,7 @@ function StepIndicator({ step, submitted }: { step: number; submitted: boolean }
               >
                 {label}
               </span>
-            </div>
+            </button>
             {n < STEPS.length && <span className="h-px w-5 bg-black/10 sm:w-8" />}
           </div>
         );
@@ -114,6 +146,9 @@ export default function CommunityRequest() {
     email: "",
     careRecipientName: shortName,
     generalArea: "Ang Mo Kio",
+    address: "",
+    postalCode: "",
+    accessNotes: "",
     relationship: "",
   });
   const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
@@ -129,6 +164,13 @@ export default function CommunityRequest() {
   );
   // Continue is allowed once any category is ticked; emptiness is checked on Continue.
   const hasNeed = Object.keys(tasks).length > 0;
+  // Address is only asked when the request involves delivery / a home visit.
+  const addressRequired = needsAddress(tasks);
+  // Area matters only for welfare/referral routing — and only when there's no
+  // address to infer it from (supplies/food/transport are area-independent).
+  const areaNeeded =
+    !addressRequired &&
+    (["welfare", "referral"] as SupportTypeId[]).some((t) => (tasks[t]?.subtypes.length ?? 0) > 0);
 
   // --- Step 1 handlers ---
   const toggleCategory = (type: SupportTypeId) => {
@@ -227,18 +269,20 @@ export default function CommunityRequest() {
     if (!contact.contactMethod.trim()) e.contactMethod = "Please choose a method";
     if (contact.contactMethod === "Email" && !contact.email.trim()) e.email = "Please add an email address";
     if (!contact.careRecipientName.trim()) e.careRecipientName = "Please add a name";
-    if (!contact.generalArea.trim()) e.generalArea = "Please choose an area";
+    if (addressRequired) {
+      if (!contact.address.trim()) e.address = "Please add an address";
+      if (!contact.postalCode.trim()) e.postalCode = "Please add a postal code";
+    } else if (areaNeeded && !contact.generalArea.trim()) {
+      e.generalArea = "Please choose an area";
+    }
     return e;
   };
 
-  const continueToMatching = () => {
+  // Step 2 (request details) → Step 3 (personal details).
+  const continueFromRequest = () => {
     const errs = validate();
-    const cErrs = validateContact();
     setErrors(errs);
-    setContactErrors(cErrs);
-
-    if (Object.keys(errs).length > 0 || Object.keys(cErrs).length > 0) {
-      // Scroll to the first invalid field (task fields first, then contact).
+    if (Object.keys(errs).length > 0) {
       let firstId: string | null = null;
       for (const [type] of activeEntries) {
         const fe = errs[type];
@@ -249,17 +293,6 @@ export default function CommunityRequest() {
           firstId = fieldDomId(type, f.key);
           break;
         }
-      }
-      if (!firstId) {
-        const ck = [
-          "caregiverName",
-          "contactNumber",
-          "contactMethod",
-          "email",
-          "careRecipientName",
-          "generalArea",
-        ].find((k) => cErrs[k]);
-        if (ck) firstId = contactFieldId(ck);
       }
       if (firstId) {
         requestAnimationFrame(() =>
@@ -272,6 +305,32 @@ export default function CommunityRequest() {
     window.scrollTo({ top: 0 });
   };
 
+  // Step 3 (personal details) → Step 4 (match & review).
+  const continueFromContact = () => {
+    const cErrs = validateContact();
+    setContactErrors(cErrs);
+    if (Object.keys(cErrs).length > 0) {
+      const ck = [
+        "caregiverName",
+        "contactNumber",
+        "contactMethod",
+        "email",
+        "careRecipientName",
+        "generalArea",
+        "address",
+        "postalCode",
+      ].find((k) => cErrs[k]);
+      if (ck) {
+        requestAnimationFrame(() =>
+          document.getElementById(contactFieldId(ck))?.scrollIntoView({ behavior: "smooth", block: "center" }),
+        );
+      }
+      return;
+    }
+    setStep(4);
+    window.scrollTo({ top: 0 });
+  };
+
   const resetAll = () => {
     setTasks({});
     setErrors({});
@@ -280,7 +339,34 @@ export default function CommunityRequest() {
     window.scrollTo({ top: 0 });
   };
 
-  const hasErrors = Object.keys(errors).length > 0 || Object.keys(contactErrors).length > 0;
+  // Step-indicator navigation: a step is reachable once every step before it is
+  // complete — so you can jump ahead to any already-filled step, not just the next.
+  const step1Valid =
+    hasNeed && (Object.values(tasks) as TaskState[]).every((t) => t.subtypes.length > 0);
+  const requestValid = Object.keys(validate()).length === 0;
+  const contactValid = Object.keys(validateContact()).length === 0;
+  let reach = 1;
+  if (step1Valid) reach = 2;
+  if (step1Valid && requestValid) reach = 3;
+  if (step1Valid && requestValid && contactValid) reach = 4;
+  const maxReachable = submitted ? STEPS.length : Math.max(step, reach);
+
+  const goToStep = (target: number) => {
+    if (submitted || target === step || target > maxReachable) return;
+    // Leaving Step 1 forward → apply Step 1 field defaults before moving on.
+    if (target > step && step === 1) {
+      setStep1Errors([]);
+      setTasks((prev) => {
+        const next: DraftTasks = {};
+        for (const [type, t] of Object.entries(prev) as [SupportTypeId, TaskState][]) {
+          if (t.subtypes.length > 0) next[type] = withDefaults(type, t);
+        }
+        return next;
+      });
+    }
+    setStep(target);
+    window.scrollTo({ top: 0 });
+  };
 
   return (
     <div className="mx-auto w-full max-w-xl space-y-5 px-4 pb-28 pt-5 lg:pt-8">
@@ -293,18 +379,18 @@ export default function CommunityRequest() {
           <h1 className="text-[20px] font-extrabold leading-tight text-ink">
             {step === 1 && "What help do you need?"}
             {step === 2 && "Tell us what's needed"}
-            {step === 3 && "Review who can help"}
+            {step === 3 && "Your details"}
+            {step === 4 && "Review who can help"}
           </h1>
-          {step !== 1 && (
-            <p className="text-[13px] leading-snug text-muted">
-              {step === 2 && "We'll use this to find suitable help in the next step."}
-              {step === 3 && "CARA recommends partners based on your needs, area, and availability."}
-            </p>
-          )}
         </div>
       </div>
 
-      <StepIndicator step={step} submitted={submitted} />
+      <StepIndicator
+        step={step}
+        submitted={submitted}
+        maxReachable={maxReachable}
+        onStepClick={goToStep}
+      />
 
       <motion.div
         key={step}
@@ -324,7 +410,18 @@ export default function CommunityRequest() {
 
         {step === 2 && (
           <>
-            {hasErrors && (
+            {Object.keys(errors).length > 0 && (
+              <p className="rounded-2xl bg-danger-soft px-4 py-3 text-[13px] font-semibold text-[#b42318] ring-1 ring-danger/20">
+                Please complete the highlighted fields to continue.
+              </p>
+            )}
+            <DetailsForm tasks={tasks} errors={errors} onChangeDetail={changeDetail} />
+          </>
+        )}
+
+        {step === 3 && (
+          <>
+            {Object.keys(contactErrors).length > 0 && (
               <p className="rounded-2xl bg-danger-soft px-4 py-3 text-[13px] font-semibold text-[#b42318] ring-1 ring-danger/20">
                 Please complete the highlighted fields to continue.
               </p>
@@ -332,20 +429,24 @@ export default function CommunityRequest() {
             <ContactDetails
               contact={contact}
               errors={contactErrors}
+              showAddress={addressRequired}
+              showArea={areaNeeded}
               onChange={(k, v) => setContact((c) => ({ ...c, [k]: v }))}
             />
-            <DetailsForm tasks={tasks} errors={errors} onChangeDetail={changeDetail} />
           </>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <ReviewMatch
             tasks={activeEntries}
             careRecipientName={contact.careRecipientName}
             linkedTopic={LINKED_TOPIC}
-            contact={contact}
+            contact={{
+              ...contact,
+              generalArea: addressRequired ? inferArea(contact.postalCode) : contact.generalArea,
+            }}
             onSubmitted={() => setSubmitted(true)}
-            onBack={() => setStep(2)}
+            onBack={() => setStep(3)}
             onReset={resetAll}
           />
         )}
@@ -374,7 +475,26 @@ export default function CommunityRequest() {
           </button>
           <button
             type="button"
-            onClick={continueToMatching}
+            onClick={continueFromRequest}
+            className="flex-1 rounded-full bg-brand py-3.5 text-[15px] font-semibold text-white shadow-sm"
+          >
+            Continue
+          </button>
+        </div>
+      )}
+      {step === 3 && (
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setStep(2)}
+            className="flex items-center gap-1.5 rounded-full px-4 py-3 text-[14px] font-semibold text-body hover:text-ink"
+          >
+            <ArrowLeft size={18} />
+            Back
+          </button>
+          <button
+            type="button"
+            onClick={continueFromContact}
             className="flex-1 rounded-full bg-brand py-3.5 text-[15px] font-semibold text-white shadow-sm"
           >
             Continue to matching

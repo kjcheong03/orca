@@ -87,7 +87,9 @@ export default function ChooseHelp({
                           onClick={() => onToggleSubtype(tmpl.id, sub)}
                           aria-pressed={on}
                           className={`rounded-full px-3.5 py-2 text-[13px] transition-colors ${
-                            on ? "bg-brand font-semibold text-white" : "bg-app font-medium text-body hover:bg-subtle"
+                            on
+                              ? "bg-app font-semibold text-brand ring-2 ring-inset ring-brand"
+                              : "bg-app font-medium text-body hover:bg-subtle"
                           }`}
                         >
                           {sub}

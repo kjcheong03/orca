@@ -1,6 +1,8 @@
 // ---------------------------------------------------------------------------
 // Cost estimation for the community help flow (mock, transparency only).
-// No payment logic — partners arrange payment directly.
+// No payment logic — community/social-service partners arrange any payment or
+// subsidy directly. Supplies are community/public stock (free, subject to
+// availability), never retail-priced.
 // ---------------------------------------------------------------------------
 
 import type {
@@ -19,16 +21,10 @@ interface CostTask {
 }
 
 const SUPPLY_KEY: Record<string, string> = {
-  Repellent: "repellent",
   Masks: "masks",
   "ART kits": "artKits",
-  Thermometer: "thermometer",
   "Hand sanitiser": "handSanitiser",
-  Soap: "soap",
-  "Cleaning wipes": "cleaningWipes",
-};
-const FOOD_KEY: Record<string, string> = {
-  "Cooked meals": "cookedMeal",
+  "Dengue kit / repellent pack": "dengueKit",
 };
 
 /** The offering a partner has for a given supplies item label, if any. */
@@ -38,142 +34,125 @@ export function getOfferingForTaskItem(itemLabel: string, partner: Organisation)
 
 /** Compute a structured cost estimate for a task fulfilled by a partner. */
 export function calculateTaskCost(task: CostTask, partner: Organisation): CostEstimate {
-  // Food packs / rations are not priced item-by-item — the partner assesses
-  // eligibility and confirms what can be provided. No grocery price estimate.
-  if (task.supportType === "food" && task.selectedSubtypes[0] === "Food pack / rations") {
-    const packs =
-      task.details.numberOfPacks === "Other"
-        ? Number(task.details.numberOfPacksOther) || 1
-        : parseInt(String(task.details.numberOfPacks), 10) || 1;
+  // --- Supplies: community/public stock — free, subject to availability ----
+  if (task.supportType === "supplies") {
+    const items = Array.isArray(task.details.itemsNeeded)
+      ? (task.details.itemsNeeded as ItemQuantity[])
+      : [];
+    const breakdown: CostBreakdownLine[] = items.map((it) => ({
+      label: it.item,
+      quantity: Number(it.quantity) || 1,
+      unitPrice: 0,
+      subtotal: 0,
+      costType: "free",
+    }));
     return {
-      costType: "partnerReview",
+      costType: "free",
+      total: 0,
       currency: "SGD",
       partnerConfirms: false,
-      label: "Free / partner assessment",
-      breakdown: [{ label: "Food pack / rations", quantity: packs, costType: "partnerReview" }],
+      label: "Free / subject to stock",
+      detail: "Partner will confirm availability.",
+      breakdown,
     };
   }
 
-  const lines: CostBreakdownLine[] = [];
-  let fixedTotal = 0;
-  let estMin = 0;
-  let estMax = 0;
-  let hasFixed = false;
-  let hasFree = false;
-  let hasEstimated = false;
-  let hasPartnerReview = false;
-  let partnerConfirms = false;
+  // --- Food: cooked meals (Meals-on-Wheels) vs food packs (food-aid) -------
+  if (task.supportType === "food") {
+    const subtype = task.selectedSubtypes[0] || "Food support";
 
-  const add = (label: string, quantity: number, offering: Offering | undefined) => {
-    if (!offering) {
-      lines.push({ label, quantity, costType: "partnerReview" });
-      hasPartnerReview = true;
-      return;
+    if (subtype === "Cooked meals") {
+      if (!partner.supportSubtypes.includes("Cooked meals")) {
+        return partnerReview("Cooked meals", "Partner will advise after assessment.");
+      }
+      const portions = parseInt(String(task.details.portionsPerMeal), 10) || 1;
+      const mealsPerDay = Array.isArray(task.details.mealsNeeded)
+        ? task.details.mealsNeeded.length || 1
+        : 1;
+      return {
+        costType: "estimated",
+        min: 4.9,
+        max: 7,
+        currency: "SGD",
+        partnerConfirms: true,
+        label: "$4.90–$7.00 per meal estimated",
+        detail: "Partner confirms cost. Subsidies may apply.",
+        breakdown: [
+          {
+            label: "Cooked meal",
+            quantity: portions * mealsPerDay,
+            min: 4.9,
+            max: 7,
+            costType: "estimated",
+          },
+        ],
+      };
     }
-    if (offering.partnerConfirms) partnerConfirms = true;
-    if (offering.costType === "free") {
-      lines.push({ label, quantity, unitPrice: 0, subtotal: 0, costType: "free" });
-      hasFree = true;
-    } else if (offering.costType === "estimated") {
-      const lo = (offering.min ?? 0) * quantity;
-      const hi = (offering.max ?? 0) * quantity;
-      estMin += lo;
-      estMax += hi;
-      hasEstimated = true;
-      lines.push({ label, quantity, min: lo, max: hi, costType: "estimated" });
-    } else {
-      // fixed | subsidised
-      const unitPrice = offering.price ?? 0;
-      const subtotal = unitPrice * quantity;
-      fixedTotal += subtotal;
-      hasFixed = true;
-      lines.push({ label, quantity, unitPrice, subtotal, costType: offering.costType });
+
+    if (subtype === "Food pack / rations") {
+      if (!partner.supportSubtypes.includes("Food pack / rations")) {
+        return partnerReview("Food pack / rations", "Partner will advise after assessment.");
+      }
+      const packs =
+        task.details.numberOfPacks === "Other"
+          ? Number(task.details.numberOfPacksOther) || 1
+          : parseInt(String(task.details.numberOfPacks), 10) || 1;
+      return {
+        costType: "partnerReview",
+        currency: "SGD",
+        partnerConfirms: false,
+        label: "Free / partner assessment",
+        detail: "Partner will confirm eligibility.",
+        breakdown: [{ label: "Food pack / rations", quantity: packs, costType: "partnerReview" }],
+      };
     }
+  }
+
+  // --- Assisted transport: estimated round-trip, partner confirms ----------
+  if (task.supportType === "transport") {
+    const offering = partner.offerings.transport?.assistedTrip;
+    const min = offering?.min ?? 40;
+    const max = offering?.max ?? 90;
+    return {
+      costType: "estimated",
+      min,
+      max,
+      currency: "SGD",
+      partnerConfirms: true,
+      label: `$${min}–$${max} estimated`,
+      detail: "Partner confirms final cost. Subsidies may apply.",
+      paymentHandledBy: "partner",
+      breakdown: [{ label: "Assisted appointment transport", quantity: 1, min, max, costType: "estimated" }],
+    };
+  }
+
+  // --- Welfare check & care referral: free ---------------------------------
+  return {
+    costType: "free",
+    total: 0,
+    currency: "SGD",
+    partnerConfirms: false,
+    breakdown: [
+      {
+        label: task.supportType === "welfare" ? "Welfare check" : "Care navigation",
+        quantity: 1,
+        unitPrice: 0,
+        subtotal: 0,
+        costType: "free",
+      },
+    ],
   };
+}
 
-  switch (task.supportType) {
-    case "supplies": {
-      const map = partner.offerings.supplies;
-      const items = Array.isArray(task.details.itemsNeeded)
-        ? (task.details.itemsNeeded as ItemQuantity[])
-        : [];
-      for (const it of items) {
-        const qty = Number(it.quantity) || 1;
-        if (it.partnerReviewNeeded) {
-          lines.push({ label: it.customItem || it.item, quantity: qty, costType: "partnerReview" });
-          hasPartnerReview = true;
-          continue;
-        }
-        add(it.item, qty, map?.[SUPPLY_KEY[it.item]]);
-      }
-      break;
-    }
-    case "food": {
-      const map = partner.offerings.food;
-      const subtype = task.selectedSubtypes[0] || "Food support";
-      if (subtype === "Cooked meals") {
-        if (task.details.duration === "Need longer-term meal support") {
-          lines.push({ label: "Cooked meals (longer-term)", quantity: 1, costType: "partnerReview" });
-          hasPartnerReview = true;
-          break;
-        }
-        const portions = parseInt(String(task.details.portionsPerMeal), 10) || 1;
-        const mealsPerDay = Array.isArray(task.details.mealsNeeded)
-          ? task.details.mealsNeeded.length || 1
-          : 1;
-        add("Cooked meals", portions * mealsPerDay, map?.cookedMeal);
-        break;
-      }
-      const key = FOOD_KEY[subtype];
-      add(subtype, 1, key ? map?.[key] : undefined);
-      break;
-    }
-    case "transport": {
-      const map = partner.offerings.transport;
-      const wheelchair =
-        task.details.wheelchairRequired === true ||
-        task.selectedSubtypes.includes("Wheelchair-friendly transport");
-      add(
-        wheelchair ? "Wheelchair clinic trip" : "Clinic trip",
-        1,
-        map?.[wheelchair ? "wheelchairTrip" : "clinicTrip"],
-      );
-      if (task.details.returnTripNeeded === true || task.selectedSubtypes.includes("Return trip")) {
-        add("Return trip", 1, map?.returnTripAddon);
-      }
-      break;
-    }
-    case "welfare": {
-      const map = partner.offerings.welfareCheck;
-      const homeVisit =
-        task.details.checkMethod === "Home visit" || task.selectedSubtypes.includes("Home visit");
-      add(homeVisit ? "Home visit" : "Phone check-in", 1, map?.[homeVisit ? "homeVisit" : "phoneCheckIn"]);
-      break;
-    }
-    case "referral": {
-      add("Navigation call", 1, partner.offerings.careReferral?.navigationCall);
-      break;
-    }
-  }
-
-  let costType: CostEstimate["costType"];
-  if (hasEstimated) costType = "estimated";
-  else if (hasPartnerReview && !hasFixed && !hasFree) costType = "partnerReview";
-  else if (hasFixed && hasFree) costType = "mixed";
-  else if (hasFixed) costType = "fixed";
-  else costType = "free";
-
-  const est: CostEstimate = { costType, currency: "SGD", partnerConfirms, breakdown: lines };
-  if (hasEstimated) {
-    est.min = fixedTotal + estMin;
-    est.max = fixedTotal + estMax;
-  } else if (costType === "free") {
-    est.total = 0;
-  } else if (costType !== "partnerReview") {
-    est.total = fixedTotal;
-  }
-  if (costType !== "free" && costType !== "partnerReview") est.paymentHandledBy = "partner";
-  return est;
+/** A partner-assessed estimate with no priceable line. */
+function partnerReview(label: string, detail: string): CostEstimate {
+  return {
+    costType: "partnerReview",
+    currency: "SGD",
+    partnerConfirms: false,
+    detail,
+    breakdown: [{ label, quantity: 1, costType: "partnerReview" }],
+  };
 }
 
 /** Just the money part, e.g. "$8" or "$12–$20" (no trailing words). */
@@ -187,16 +166,17 @@ export function costAmount(est: CostEstimate): string {
 
 /** Short chip label, e.g. "Free", "$8 estimated", "$12–$20 estimated", "Partner review". */
 export function formatCostEstimate(est: CostEstimate): string {
+  if (est.label) return est.label;
   if (est.costType === "free") return "Free";
-  if (est.costType === "partnerReview") return "Partner review";
+  if (est.costType === "partnerReview") return "Partner assessment";
   return `${costAmount(est)} estimated`;
 }
 
-/** One-line explanation shown beside a paid estimate. */
+/** One-line explanation shown beside an estimate. */
 export function costDetail(est: CostEstimate): string {
+  if (est.detail) return est.detail;
   if (est.costType === "free") return "";
-  if (est.costType === "partnerReview")
-    return est.label ? "Partner will confirm eligibility." : "Partner will advise after assessment.";
-  if (est.partnerConfirms) return "Partner confirms final cost";
+  if (est.costType === "partnerReview") return "Partner will advise after assessment.";
+  if (est.partnerConfirms) return "Partner confirms final cost.";
   return "Partner will contact you to confirm payment.";
 }

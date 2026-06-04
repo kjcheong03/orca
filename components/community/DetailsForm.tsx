@@ -101,12 +101,12 @@ function MultiSelectDropdown({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`${inputBase} flex items-center justify-between pr-9 text-left ${
+        className={`${inputBase} flex items-center justify-between text-left ${
           error ? "border-danger" : "border-black/10"
         } ${selected.length ? "text-ink" : "text-faint"}`}
       >
         {selected.length ? `${selected.length} selected` : placeholder}
-        <ChevronDown size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-faint" />
+        <ChevronDown size={18} className="ml-2 shrink-0 text-faint" />
       </button>
       {open && (
         <div className="absolute z-20 mt-1.5 w-full overflow-hidden rounded-xl border border-black/10 bg-white py-1 shadow-[0_8px_24px_rgba(30,50,90,0.14)]">
@@ -182,6 +182,15 @@ function Field({
 }) {
   const borderCls = error ? "border-danger" : "border-black/10";
   const boxCls = `${inputBase} ${borderCls}`;
+
+  // Note → an informational line, no input.
+  if (field.kind === "note") {
+    return (
+      <div id={id} className="scroll-mt-24 rounded-xl bg-app px-3.5 py-3 text-[12.5px] leading-snug text-muted">
+        {field.help}
+      </div>
+    );
+  }
 
   // Toggle → a simple checkbox row (ticked = yes).
   if (field.kind === "toggle") {
@@ -331,9 +340,9 @@ function Field({
       const max = field.max ?? 99;
       const n = Math.min(max, Math.max(min, Number(value) || min));
       const stepBtn =
-        "grid h-9 w-9 place-items-center rounded-full border border-black/15 text-ink transition-colors disabled:opacity-35 disabled:cursor-not-allowed hover:enabled:bg-app";
+        "grid h-7 w-7 place-items-center rounded-full border border-black/15 text-ink transition-colors disabled:opacity-35 disabled:cursor-not-allowed hover:enabled:bg-app";
       control = (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={() => onChange(String(Math.max(min, n - 1)))}
@@ -341,9 +350,9 @@ function Field({
             className={stepBtn}
             aria-label="Decrease"
           >
-            <Minus size={16} strokeWidth={2.5} />
+            <Minus size={14} strokeWidth={2.5} />
           </button>
-          <span className="min-w-7 text-center text-[16px] font-semibold text-ink">{n}</span>
+          <span className="min-w-6 text-center text-[14px] font-semibold text-ink">{n}</span>
           <button
             type="button"
             onClick={() => onChange(String(Math.min(max, n + 1)))}
@@ -351,7 +360,7 @@ function Field({
             className={stepBtn}
             aria-label="Increase"
           >
-            <Plus size={16} strokeWidth={2.5} />
+            <Plus size={14} strokeWidth={2.5} />
           </button>
         </div>
       );

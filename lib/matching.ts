@@ -7,24 +7,90 @@
 // ---------------------------------------------------------------------------
 
 import {
+  FOOD_ROUTES,
+  getOrganisation,
   organisations,
+  SUPPLY_ROUTES,
   type CostEstimate,
+  type FulfilmentRoute,
+  type ItemQuantity,
   type Organisation,
   type SupportTypeId,
   type TaskDraft,
 } from "./community";
-import { calculateTaskCost } from "./cost";
+import { calculateTaskCost, costDetail, formatCostEstimate } from "./cost";
 
-/** Maps a supplies subtype to its stock-inventory key. */
-const STOCK_KEY: Record<string, string> = {
-  Repellent: "repellent",
-  Masks: "masks",
-  "ART kits": "ART kits",
-  Thermometer: "thermometers",
-  "Hand sanitiser": "handSanitiser",
-  Soap: "soap",
-  "Cleaning wipes": "cleaningWipes",
-};
+/**
+ * Item/subtype-level routing for supplies and food. Supplies map each item to
+ * an episodic public/community distribution exercise; food maps each subtype to
+ * the real partner service that fulfils it. Returns null for single-partner
+ * support types (welfare, transport, referral), which use matchPartners.
+ */
+export function routeRequest(task: TaskDraft): FulfilmentRoute[] | null {
+  if (task.supportType === "supplies") {
+    const items = Array.isArray(task.details.itemsNeeded)
+      ? (task.details.itemsNeeded as ItemQuantity[])
+      : [];
+    return items.map((it) => {
+      const qty = Number(it.quantity) || 1;
+      const r = SUPPLY_ROUTES[it.item];
+      if (!r) {
+        return {
+          label: it.item,
+          quantity: qty,
+          routeName: "No active community route",
+          routeType: "community_distribution",
+          availabilityMode: "unavailable",
+          costLabel: "—",
+          status: "No active community route available for this item",
+        };
+      }
+      return {
+        label: it.item,
+        quantity: qty,
+        routeName: r.routeName,
+        logo: r.logo,
+        routeType: r.routeType,
+        availabilityMode: r.availabilityMode,
+        costLabel: r.costLabel,
+        status: r.status,
+      };
+    });
+  }
+
+  if (task.supportType === "food") {
+    return task.selectedSubtypes.map((sub) => {
+      const org = getOrganisation(FOOD_ROUTES[sub] ?? "");
+      if (!org) {
+        return {
+          label: sub,
+          routeName: "No active route",
+          routeType: "partner_service",
+          availabilityMode: "unavailable",
+          costLabel: "—",
+          status: "No partner available for this item",
+        };
+      }
+      const est = calculateTaskCost(
+        { supportType: "food", selectedSubtypes: [sub], details: task.details },
+        org,
+      );
+      return {
+        label: sub,
+        routeName: org.name,
+        logo: org.logo,
+        organisationId: org.id,
+        routeType: "partner_service",
+        availabilityMode: "partner_assessment",
+        costLabel: formatCostEstimate(est),
+        detail: costDetail(est),
+        status: "",
+      };
+    });
+  }
+
+  return null;
+}
 
 export interface PartnerMatch {
   org: Organisation;
@@ -91,29 +157,25 @@ function evaluate(task: TaskDraft, org: Organisation): PartnerMatch {
     reasons.push("Covers your area");
   }
 
-  // 3 + 4. Availability / capacity / stock + suitability.
+  // 3 + 4. Availability / capacity + suitability.
+  // Supplies + food are handled by routeRequest(), not partner matching.
   switch (task.supportType) {
-    case "supplies": {
-      for (const s of subs) {
-        const key = STOCK_KEY[s];
-        if (key) metric += num(org.stockInventory?.[key]);
-      }
-      score += Math.min(metric, 200) / 20;
-      if (metric > 0) reasons.push("Has stock");
-      // Prefer the nearby local hub for everyday supplies it can actually stock.
-      if (org.tags.includes("nearby") && servesArea(org, area) && metric > 0) score += 6;
-      break;
-    }
     case "food": {
-      metric = num(org.capacity["meal slots today"]);
+      // Capability is real here: cooked meals vs food packs go to different partners.
+      const covers = subs.some((s) => org.supportSubtypes.includes(s));
+      if (!covers) {
+        suitable = false;
+        note = "Doesn't provide this kind of food support";
+        break;
+      }
+      metric =
+        num(org.capacity["meal slots today"]) || num(org.capacity["food pack slots today"]);
       score += metric;
-      if (metric > 0) reasons.push("Available today");
       break;
     }
     case "welfare": {
       metric = num(org.capacity["welfare check slots today"]);
       score += metric;
-      if (metric > 0) reasons.push("Available today");
       if (task.details.checkMethod === "Home visit") {
         if (org.supportSubtypes.includes("Home visit")) {
           score += 3;
@@ -129,19 +191,18 @@ function evaluate(task: TaskDraft, org: Organisation): PartnerMatch {
       metric = num(org.capacity["transport slots today"]);
       const wheelchairSlots = num(org.capacity["wheelchair-capable slots today"]);
       score += metric;
+      reasons.push("Assisted transport");
       const needsWheelchair =
         task.details.wheelchairRequired === true ||
-        subs.includes("Wheelchair-friendly transport");
+        subs.includes("Wheelchair-accessible transport");
       if (needsWheelchair) {
         if (wheelchairSlots > 0) {
           score += 5;
-          reasons.push("Wheelchair-capable");
+          reasons.push("Wheelchair support");
         } else {
           suitable = false;
-          note = "Not wheelchair-capable";
+          note = "Wheelchair support not available";
         }
-      } else if (metric > 0) {
-        reasons.push("Available today");
       }
       break;
     }
@@ -150,16 +211,13 @@ function evaluate(task: TaskDraft, org: Organisation): PartnerMatch {
         num(org.capacity["navigation callback slots today"]) ||
         num(org.capacity["welfare check slots today"]);
       score += metric;
-      if (metric > 0) reasons.push("Available today");
       break;
     }
   }
 
   if (org.status === "busy") score -= 1;
-  if (org.limitations.some((l) => /confirm/i.test(l))) reasons.push("Partner confirmation needed");
 
-  // Area + availability gate for the "qualified" tier (capability is handled by
-  // support-type eligibility; reason-based subtypes aren't a capability filter).
+  // Area + availability gate for the "qualified" tier.
   const qualified = suitable && inArea && metric > 0;
 
   return { org, score, metric, reasons, suitable, qualified, note };
@@ -195,10 +253,12 @@ export function matchPartners(
     if (m.reasons.length === 0) m.reasons = ["Handles this request"];
   }
 
+  // Primary must be a suitable partner; if none are suitable, there's no match.
+  const suitableIds = ranked.filter((m) => m.suitable).map((m) => m.org.id);
   return {
     ranked,
-    primaryId: ranked[0]?.org.id ?? null,
-    fallbackId: ranked[1]?.org.id ?? null,
+    primaryId: suitableIds[0] ?? null,
+    fallbackId: suitableIds[1] ?? null,
   };
 }
 
@@ -209,18 +269,13 @@ export function capacitySummary(
   subtypes: string[],
 ): string {
   switch (type) {
-    case "supplies": {
-      const parts = subtypes
-        .map((s) => {
-          const key = STOCK_KEY[s];
-          const n = key ? num(org.stockInventory?.[key]) : undefined;
-          return key && n !== undefined ? `${s}: ${n}` : null;
-        })
-        .filter(Boolean) as string[];
-      return parts.length ? parts.join(" · ") : "Stock on request";
+    case "supplies":
+      return "Routed to active distribution exercises";
+    case "food": {
+      const m = num(org.capacity["meal slots today"]);
+      const p = num(org.capacity["food pack slots today"]);
+      return p > 0 ? `Food pack slots today: ${p}` : `Meal slots today: ${m}`;
     }
-    case "food":
-      return `Meal slots today: ${num(org.capacity["meal slots today"])}`;
     case "welfare":
       return `Welfare slots today: ${num(org.capacity["welfare check slots today"])}`;
     case "transport": {
