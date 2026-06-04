@@ -135,7 +135,7 @@ function StepIndicator({
   );
 }
 
-export default function CommunityRequest() {
+export default function CommunityRequest({ onExit }: { onExit: () => void }) {
   const [step, setStep] = useState(1);
   const [tasks, setTasks] = useState<DraftTasks>({});
   const [errors, setErrors] = useState<Partial<Record<SupportTypeId, Record<string, string>>>>({});
@@ -331,14 +331,6 @@ export default function CommunityRequest() {
     window.scrollTo({ top: 0 });
   };
 
-  const resetAll = () => {
-    setTasks({});
-    setErrors({});
-    setSubmitted(false);
-    setStep(1);
-    window.scrollTo({ top: 0 });
-  };
-
   // Step-indicator navigation: a step is reachable once every step before it is
   // complete — so you can jump ahead to any already-filled step, not just the next.
   const step1Valid =
@@ -372,6 +364,16 @@ export default function CommunityRequest() {
     <div className="mx-auto w-full max-w-xl space-y-5 px-4 pb-28 pt-5 lg:pt-8">
       {/* Header */}
       <div className="flex items-center gap-3">
+        {!submitted && (
+          <button
+            type="button"
+            onClick={onExit}
+            aria-label="Back to community help"
+            className="shrink-0 text-body transition-colors hover:text-ink"
+          >
+            <ArrowLeft size={20} />
+          </button>
+        )}
         <span className="-my-2 shrink-0">
           <Mascot size={52} variant="calm" animated={false} />
         </span>
@@ -447,7 +449,7 @@ export default function CommunityRequest() {
             }}
             onSubmitted={() => setSubmitted(true)}
             onBack={() => setStep(3)}
-            onReset={resetAll}
+            onReset={onExit}
           />
         )}
       </motion.div>

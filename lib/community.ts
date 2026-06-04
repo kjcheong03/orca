@@ -931,6 +931,13 @@ export function getOrganisation(id: string): Organisation | undefined {
 
 // --- final submitted request (consumed by Phase 4) ------------------------
 
+/**
+ * Lifecycle status of a request / task, mirroring the community partner
+ * dashboard. New submissions start "Pending"; partners later move them to
+ * "Accepted" or "Rejected" (no backend yet, so only "Pending" surfaces).
+ */
+export type RequestStatus = "Pending" | "Accepted" | "Rejected";
+
 export interface RequestTaskSession {
   id: string;
   supportType: SupportTypeId;
@@ -941,7 +948,7 @@ export interface RequestTaskSession {
   /** Item/subtype-level routes (supplies + food); empty for single-partner types. */
   fulfilmentRoutes?: FulfilmentRoute[];
   costEstimate?: CostEstimate;
-  status: "Sent";
+  status: RequestStatus;
 }
 
 export interface RequestSession {
@@ -952,9 +959,14 @@ export interface RequestSession {
   contactMethod: string;
   email?: string;
   relationship?: string;
+  /** Location details (present only when the request collected them). */
+  generalArea?: string;
+  address?: string;
+  postalCode?: string;
+  accessNotes?: string;
   linkedTopic: string;
   createdAt: string;
-  overallStatus: "Sent";
+  overallStatus: RequestStatus;
   tasks: RequestTaskSession[];
 }
 

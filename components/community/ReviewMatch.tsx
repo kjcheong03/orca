@@ -5,9 +5,9 @@ import { ArrowLeft, Check, Info, Star, X } from "lucide-react";
 import { matchPartners, routeRequest, type MatchResult } from "@/lib/matching";
 import { calculateTaskCost, formatCostEstimate } from "@/lib/cost";
 import { type ContactInfo } from "@/components/community/ContactDetails";
+import { persistRequest } from "@/lib/requestStore";
 import {
   getOrganisation,
-  saveRequestSession,
   supportTypeLabels,
   type CostEstimate,
   type FulfilmentRoute,
@@ -216,9 +216,13 @@ export default function ReviewMatch({
       contactMethod: contact.contactMethod,
       email: contact.contactMethod === "Email" ? contact.email : undefined,
       relationship: contact.relationship || undefined,
+      generalArea: contact.generalArea || undefined,
+      address: contact.address || undefined,
+      postalCode: contact.postalCode || undefined,
+      accessNotes: contact.accessNotes || undefined,
       linkedTopic,
       createdAt: new Date().toISOString(),
-      overallStatus: "Sent",
+      overallStatus: "Pending",
       tasks: drafts.map((d) => {
         const routes = routesByType[d.supportType];
         if (routes) {
@@ -230,7 +234,7 @@ export default function ReviewMatch({
             primaryOrganisationId: "",
             fallbackOrganisationIds: [],
             fulfilmentRoutes: routes,
-            status: "Sent" as const,
+            status: "Pending" as const,
           };
         }
         const sel = selections[d.supportType];
@@ -243,11 +247,11 @@ export default function ReviewMatch({
           primaryOrganisationId: sel.primaryId ?? "",
           fallbackOrganisationIds: sel.fallbackIds,
           costEstimate: primaryOrg ? calculateTaskCost(d, primaryOrg) : undefined,
-          status: "Sent" as const,
+          status: "Pending" as const,
         };
       }),
     };
-    saveRequestSession(session);
+    persistRequest(session);
     setSubmitted(session);
     onSubmitted();
     window.scrollTo({ top: 0 });
@@ -292,7 +296,7 @@ export default function ReviewMatch({
           onClick={onReset}
           className="w-full rounded-full bg-brand py-3.5 text-[15px] font-semibold text-white shadow-sm"
         >
-          Start a new request
+          Back to my requests
         </button>
       </div>
     );

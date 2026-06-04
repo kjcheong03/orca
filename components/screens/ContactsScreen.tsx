@@ -1,9 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { HeartPulse, MapPin, Pencil, Pill, Plus, Trash2, X } from "lucide-react";
-import { CareProfileGlyph, SmsAlertGlyph, SolidPhone } from "@/components/glyphs";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Check,
+  ChevronDown,
+  HeartPulse,
+  MapPin,
+  MessageCircle,
+  Mic,
+  Pencil,
+  Pill,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
+import { SmsAlertGlyph, SolidPhone } from "@/components/glyphs";
 import { useApp } from "@/context/AppContext";
 import { ambulance, contacts, patient } from "@/lib/data";
 import type { Contact } from "@/lib/types";
@@ -21,10 +33,20 @@ function initialsOf(name: string): string {
 
 export default function ContactsScreen() {
   const { t } = useApp();
-  const [profileOpen, setProfileOpen] = useState(false);
   const [list, setList] = useState<Contact[]>(contacts);
   const [formMode, setFormMode] = useState<{ type: "add" } | { type: "edit"; contact: Contact } | null>(null);
   const [actionsFor, setActionsFor] = useState<Contact | null>(null);
+  const [messageFor, setMessageFor] = useState<Contact | null>(null);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  // Care-card details — kept entirely separate from the alert message.
+  const cardDetails = [
+    `${patient.name} (${patient.sex}, ${patient.age})`,
+    patient.address,
+    `Conditions: ${patient.conditions.join(", ")}`,
+    `Emergency medicine: ${patient.emergencyMedicine.map((m) => `${m.name} — ${m.dose}`).join("; ")}`,
+  ].join("\n");
 
   const saveContact = (name: string, relation: string, phone: string) => {
     const base = { initials: initialsOf(name), name: name.trim(), relation: relation.trim(), phone: phone.trim() };
@@ -42,55 +64,112 @@ export default function ContactsScreen() {
     setActionsFor(null);
   };
 
-  const primary = list[0];
-  const smsBody = `ALERT — ${patient.name} (${patient.sex}, ${patient.age}) may need help at ${patient.address}. Conditions: ${patient.conditions.join(", ")}. Please call to check on her.`;
-  const smsHref = `sms:${primary.phone.replace(/\s/g, "")}?&body=${encodeURIComponent(smsBody)}`;
-
   return (
     <div className="mx-auto w-full max-w-md space-y-5 px-5 pb-8 pt-6 lg:pt-8">
-      {/* Two key actions */}
-      <div className="grid grid-cols-2 gap-3">
-        <motion.button
-          type="button"
-          onClick={() => setProfileOpen(true)}
-          whileHover={{ y: -3 }}
-          whileTap={{ scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 400, damping: 22 }}
-          className="flex flex-col items-center gap-1 rounded-2xl bg-white px-3 py-3.5 shadow-[0_2px_14px_rgba(30,50,90,0.06)] hover:shadow-[0_8px_22px_rgba(30,50,90,0.12)]"
-        >
-          <CareProfileGlyph size={34} />
-          <span className="text-[15px] font-bold text-ink">Care Profile</span>
-        </motion.button>
-        <motion.a
-          href={smsHref}
-          whileHover={{ y: -3 }}
-          whileTap={{ scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 400, damping: 22 }}
-          className="flex flex-col items-center gap-1 rounded-2xl bg-white px-3 py-3.5 shadow-[0_2px_14px_rgba(30,50,90,0.06)] hover:shadow-[0_8px_22px_rgba(30,50,90,0.12)]"
-        >
-          <SmsAlertGlyph size={34} />
-          <span className="text-[15px] font-bold text-ink">SMS Alert</span>
-        </motion.a>
+      {/* Care profile */}
+      <div className="overflow-hidden rounded-[22px] bg-white shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
+        <div className="bg-brand px-5 py-4 text-white">
+          <p className="text-[18px] font-bold leading-tight">{patient.name}</p>
+          <p className="mt-0.5 text-[15px] text-white/90">
+            {patient.sex} · {patient.age}
+          </p>
+        </div>
+        <div className="space-y-4 px-5 py-5">
+          <ProfileRow icon={<MapPin size={18} />} label="Address">
+            {patient.address}
+          </ProfileRow>
+          <ProfileRow icon={<HeartPulse size={18} />} label="Conditions">
+            {patient.conditions.join(", ")}
+          </ProfileRow>
+          <ProfileRow icon={<Pill size={18} />} label="Emergency medicine">
+            {patient.emergencyMedicine.map((m) => `${m.name} — ${m.dose}`).join("; ")}
+          </ProfileRow>
+        </div>
       </div>
 
-      {/* Emergency contacts */}
-      <section className="pt-3">
-        <div className="mb-3 flex items-center justify-between px-1">
-          <h2 className="text-[15px] font-bold text-ink">{t("contacts.title")}</h2>
+      {/* Alert message — view / edit then send */}
+      <div className="overflow-hidden rounded-[22px] bg-white shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
+        <button
+          type="button"
+          onClick={() => setAlertOpen((o) => !o)}
+          aria-expanded={alertOpen}
+          className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
+        >
+          <SmsAlertGlyph size={28} />
+          <span className="flex-1 text-[15px] font-bold text-ink">Alert message</span>
+          <ChevronDown
+            size={18}
+            className={`text-faint transition-transform ${alertOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+        <AnimatePresence initial={false}>
+          {alertOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden border-t border-black/[0.06]"
+            >
+              <div className="px-4 py-4">
+                <div className="rounded-xl border border-black/10 bg-white focus-within:border-brand">
+                  <textarea
+                    value={msg}
+                    onChange={(e) => setMsg(e.target.value)}
+                    rows={5}
+                    placeholder="Type an alert message, or record one…"
+                    className="w-full resize-none bg-transparent px-3.5 pt-2.5 text-[13.5px] leading-snug text-ink outline-none placeholder:text-faint"
+                  />
+                  <div className="flex items-center justify-between px-2.5 pb-2">
+                    <button
+                      type="button"
+                      onClick={() => setMsg("")}
+                      disabled={!msg}
+                      className="rounded-lg px-2 py-1 text-[12.5px] font-semibold text-faint transition-colors hover:text-ink disabled:opacity-40"
+                    >
+                      Clear
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Record voice message"
+                      className="grid h-8 w-8 place-items-center rounded-full bg-app text-brand transition-transform active:scale-95"
+                    >
+                      <Mic size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* 995 */}
+      <a
+        href={`tel:${ambulance.phone}`}
+        className="flex w-full items-center justify-center gap-2.5 rounded-full bg-danger px-7 py-3.5 text-[15px] font-bold text-white transition-transform active:scale-[0.98]"
+      >
+        <SolidPhone size={18} /> {t("contacts.needAmbulance")}
+      </a>
+
+      {/* Emergency Contacts */}
+      <section className="pt-1">
+        <div className="mb-3 flex items-center gap-1.5 px-1">
+          <h2 className="text-[15px] font-bold text-ink">Emergency Contacts</h2>
           <button
             type="button"
             onClick={() => setFormMode({ type: "add" })}
             aria-label="Add contact"
-            className="grid h-8 w-8 place-items-center rounded-full bg-brand text-white shadow-sm transition-transform active:scale-95"
+            className="text-faint transition-colors hover:text-brand"
           >
-            <Plus size={18} />
+            <Plus size={17} strokeWidth={2.5} />
           </button>
         </div>
         <div className="overflow-hidden rounded-2xl bg-white shadow-[0_2px_12px_rgba(30,50,90,0.06)]">
           {list.map((c, i) => (
             <div
               key={c.id}
-              className={`flex items-center gap-3 px-4 py-3 ${i > 0 ? "border-t border-black/10" : ""}`}
+              className={`flex items-center gap-2.5 px-4 py-3 ${i > 0 ? "border-t border-black/10" : ""}`}
             >
               <button
                 type="button"
@@ -102,6 +181,14 @@ export default function ContactsScreen() {
                   <span className="text-[12px] font-medium text-faint">{c.relation}</span>
                 </span>
                 <span className="mt-0.5 block text-[13px] leading-tight text-muted">{c.phone}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMessageFor(c)}
+                aria-label={`Message ${c.name}`}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-app text-brand transition-transform active:scale-95"
+              >
+                <MessageCircle size={17} />
               </button>
               <a
                 href={`tel:${c.phone.replace(/\s/g, "")}`}
@@ -115,15 +202,6 @@ export default function ContactsScreen() {
         </div>
       </section>
 
-      {/* 995 */}
-      <a
-        href={`tel:${ambulance.phone}`}
-        className="mx-auto flex w-fit items-center justify-center gap-2.5 rounded-full bg-danger px-7 py-3.5 text-[15px] font-bold text-white transition-transform active:scale-[0.98]"
-      >
-        <SolidPhone size={18} /> {t("contacts.needAmbulance")}
-      </a>
-
-      {profileOpen && <CareProfileSheet onClose={() => setProfileOpen(false)} />}
       {formMode && (
         <ContactFormSheet
           initial={formMode.type === "edit" ? formMode.contact : undefined}
@@ -143,6 +221,88 @@ export default function ContactsScreen() {
           onDelete={() => deleteContact(actionsFor.id)}
         />
       )}
+      {messageFor && (
+        <ContactMessageSheet
+          contact={messageFor}
+          cardDetails={cardDetails}
+          alertMessage={msg}
+          onClose={() => setMessageFor(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function ContactMessageSheet({
+  contact,
+  cardDetails,
+  alertMessage,
+  onClose,
+}: {
+  contact: Contact;
+  cardDetails: string;
+  alertMessage: string;
+  onClose: () => void;
+}) {
+  const [withCard, setWithCard] = useState(false);
+  const [withAlert, setWithAlert] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const parts: string[] = [];
+  if (withCard) parts.push(cardDetails);
+  if (withAlert && alertMessage.trim()) parts.push(alertMessage.trim());
+  const body = parts.join("\n\n");
+  const href = `sms:${contact.phone.replace(/\s/g, "")}${body ? `?&body=${encodeURIComponent(body)}` : ""}`;
+
+  const Option = ({
+    on,
+    onToggle,
+    label,
+  }: {
+    on: boolean;
+    onToggle: () => void;
+    label: string;
+  }) => (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={on}
+      className="flex w-full items-center gap-3 rounded-2xl bg-app px-4 py-3 text-left"
+    >
+      <span
+        className={`grid h-5 w-5 shrink-0 place-items-center rounded-[6px] border-2 transition-colors ${
+          on ? "border-brand bg-brand text-white" : "border-black/25"
+        }`}
+      >
+        {on && <Check size={13} strokeWidth={3.5} />}
+      </span>
+      <span className="text-[14px] font-semibold text-ink">{label}</span>
+    </button>
+  );
+
+  return (
+    <div className="fade-enter fixed inset-0 z-40 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Send message">
+      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/40" />
+      <div className="pop-enter relative w-full max-w-xs rounded-[28px] bg-card p-5">
+        <p className="text-center text-[16px] font-bold text-ink">Message {contact.name}</p>
+        <p className="mt-0.5 text-center text-[13px] text-muted">Choose what to include</p>
+        <div className="mt-4 space-y-2">
+          <Option on={withCard} onToggle={() => setWithCard((v) => !v)} label="Add emergency card details" />
+          <Option on={withAlert} onToggle={() => setWithAlert((v) => !v)} label="Add alert message" />
+        </div>
+        <a
+          href={href}
+          onClick={onClose}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-brand py-3 text-[14px] font-semibold text-white shadow-sm transition-transform active:scale-[0.99]"
+        >
+          <MessageCircle size={17} /> Send
+        </a>
+      </div>
     </div>
   );
 }
@@ -304,64 +464,6 @@ function ContactFormSheet({
         >
           {initial ? "Save changes" : "Add contact"}
         </button>
-      </div>
-    </div>
-  );
-}
-
-function CareProfileSheet({ onClose }: { onClose: () => void }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  return (
-    <div
-      className="fade-enter fixed inset-0 z-40 flex items-end justify-center"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Care profile"
-    >
-      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/40" />
-      <div className="sheet-enter relative w-full max-w-md rounded-t-[28px] bg-app p-5 pb-8">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="display text-[20px] text-ink">Care profile</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm"
-          >
-            <X size={18} className="text-ink" />
-          </button>
-        </div>
-
-        <div className="overflow-hidden rounded-[22px] bg-white shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
-          <div className="flex items-center gap-3.5 bg-brand px-5 py-4 text-white">
-            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/20 text-[18px] font-bold">
-              {patient.initials}
-            </span>
-            <div className="min-w-0">
-              <p className="text-[18px] font-bold leading-tight">{patient.name}</p>
-              <p className="text-[13px] text-white/85">
-                {patient.sex} · {patient.age}
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-4 px-5 py-5">
-            <ProfileRow icon={<MapPin size={18} />} label="Address">
-              {patient.address}
-            </ProfileRow>
-            <ProfileRow icon={<HeartPulse size={18} />} label="Conditions">
-              {patient.conditions.join(", ")}
-            </ProfileRow>
-            <ProfileRow icon={<Pill size={18} />} label="Emergency medicine">
-              {patient.emergencyMedicine.map((m) => `${m.name} — ${m.dose}`).join("; ")}
-            </ProfileRow>
-          </div>
-        </div>
       </div>
     </div>
   );
