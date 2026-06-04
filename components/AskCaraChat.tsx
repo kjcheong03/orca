@@ -181,7 +181,7 @@ export default function AskCaraChat({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={`Ask about ${shortName}…`}
-            className="flex-1 rounded-full bg-app px-4 py-2.5 text-[14px] text-ink outline-none placeholder:text-faint"
+            className="flex-1 rounded-full border border-black/10 bg-white px-4 py-2.5 text-[14px] text-ink outline-none transition-colors placeholder:text-faint focus:border-brand"
           />
           <button
             type="submit"
