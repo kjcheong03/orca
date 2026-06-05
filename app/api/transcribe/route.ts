@@ -7,12 +7,21 @@ export const maxDuration = 30;
 
 const MODEL = "gpt-4o-transcribe";
 
-// A short seed phrase in the caregiver's set language. The transcription API
-// takes only ONE `language` value (or none) — there's no "id or en, not tl"
-// list — so instead of hard-pinning (which would break English speech) we pass
-// this as a soft `prompt` bias. It nudges detection toward the set language and
-// health vocabulary, making a wrong-language mis-detect (e.g. Tagalog) unlikely,
-// while clear English is still transcribed.
+// The selected language is enforced on transcription: the model is told to
+// decode in exactly this language (ISO-639-1). Speaking another language while
+// set to one of these will be transcribed AS the set language, never detected
+// as a third language. The app's codes are already valid ISO-639-1 values.
+const ISO: Record<Language, string> = {
+  en: "en",
+  id: "id",
+  ms: "ms",
+  tl: "tl",
+  zh: "zh",
+  my: "my",
+};
+
+// A short seed phrase in the set language — domain/vocabulary priming to
+// sharpen accuracy alongside the enforced language.
 const PRIME: Record<Language, string> = {
   en: "A caregiver is asking about an elderly person's health in Singapore.",
   id: "Seorang pengasuh bertanya tentang kesehatan lansia di Singapura.",
@@ -44,12 +53,11 @@ export async function POST(req: NextRequest) {
   try {
     const buf = Buffer.from(await audio.arrayBuffer());
     const file = await toFile(buf, "speech.webm", { type: audio.type || "audio/webm" });
-    // No hard `language` (so English still works); a `prompt` in the set
-    // language biases detection toward it. The reply language is enforced
-    // separately by /api/chat, not by what they speak.
+    // Enforce the selected language so transcription is locked to it.
     const transcription = await client.audio.transcriptions.create({
       model: MODEL,
       file,
+      language: ISO[lang] ?? "en",
       prompt: PRIME[lang] ?? PRIME.en,
     });
     return NextResponse.json({ text: (transcription.text ?? "").trim() });
