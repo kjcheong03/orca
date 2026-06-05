@@ -26,3 +26,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# media binaries — served from Supabase Storage, kept on disk only as the
+# source for scripts/dub.mjs + scripts/upload-media.mjs (don't commit ~26 MB)
+/public/videos/*.mp4
+/public/videos/*.mp3
+/public/videos/*.webp

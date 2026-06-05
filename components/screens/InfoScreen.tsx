@@ -10,8 +10,9 @@ import CalendarFab from "@/components/CalendarFab";
 import HazardDropdown from "@/components/HazardDropdown";
 import MediaCarousel from "@/components/MediaCarousel";
 import Mascot from "@/components/Mascot";
+import VideoResource from "@/components/VideoResource";
 import SegmentedToggle from "@/components/ui/SegmentedToggle";
-import { guidance, news } from "@/lib/media";
+import { guidance, news, videos } from "@/lib/media";
 import { patient } from "@/lib/data";
 import { getDengueScenario, HOME } from "@/lib/dengue";
 import { covidWeekly } from "@/lib/outbreaks";
@@ -176,9 +177,43 @@ export default function InfoScreen() {
       {/* Active advisories — vertical slideshow, opens the broadcast sheet */}
       <AdvisoryCarousel />
 
-      {/* Mascot, with the top control (calendar FAB / location pill) floated to
-          the right and flush with the mascot's top. */}
-      <div className="relative flex justify-center">
+      {/* Topic switcher and date/location control share their own row so they
+          never crowd the mascot below them. */}
+      <div className="flex items-start justify-between gap-3">
+        <HazardDropdown<Hazard>
+          value={hazard}
+          onChange={setHazard}
+          options={[
+            {
+              value: "covid",
+              label: "COVID-19",
+              dot: tierStyle[(cov ?? getScenario("covid", date)).tier].dot,
+            },
+            {
+              value: "dengue",
+              label: "Dengue",
+              dot: tierStyle[(den ?? getDengueScenario()).tier].dot,
+            },
+          ]}
+        />
+        {isCovid ? (
+          <CalendarFab
+            value={date}
+            min={dateBounds.min}
+            max={dateBounds.max}
+            updates={covidWeekly.map((p) => p.date)}
+            onChange={handleDateChange}
+          />
+        ) : (
+          <div className="flex min-w-0 max-w-[55%] items-center gap-2 rounded-full bg-card px-4 py-2 shadow-[0_2px_12px_rgba(30,50,90,0.06)]">
+            <MapPin size={16} className="shrink-0 text-brand" />
+            <span className="truncate text-[15px] font-semibold text-ink">{den!.area}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Mascot, centered on its own and full-width so nothing overlaps it. */}
+      <div className="flex justify-center">
         <button
           type="button"
           onClick={() => setChatOpen(true)}
@@ -187,40 +222,6 @@ export default function InfoScreen() {
         >
           <Mascot variant={mascot} size={168} />
         </button>
-        <div className="absolute left-0 top-0">
-          <HazardDropdown<Hazard>
-            value={hazard}
-            onChange={setHazard}
-            options={[
-              {
-                value: "covid",
-                label: "COVID-19",
-                dot: tierStyle[(cov ?? getScenario("covid", date)).tier].dot,
-              },
-              {
-                value: "dengue",
-                label: "Dengue",
-                dot: tierStyle[(den ?? getDengueScenario()).tier].dot,
-              },
-            ]}
-          />
-        </div>
-        <div className="absolute right-0 top-0">
-          {isCovid ? (
-            <CalendarFab
-              value={date}
-              min={dateBounds.min}
-              max={dateBounds.max}
-              updates={covidWeekly.map((p) => p.date)}
-              onChange={handleDateChange}
-            />
-          ) : (
-            <div className="flex w-fit items-center gap-2 rounded-full bg-card px-4 py-2 shadow-[0_2px_12px_rgba(30,50,90,0.06)]">
-              <MapPin size={16} className="text-brand" />
-              <span className="text-[15px] font-semibold text-ink">{den!.area}</span>
-            </div>
-          )}
-        </div>
       </div>
 
       <div className="mx-auto w-full max-w-[300px]">
@@ -256,11 +257,12 @@ export default function InfoScreen() {
           <>
             <MediaCarousel title="Latest updates" items={news[hazard]} accent="blue" />
             <MediaCarousel title="Guidance resources" items={guidance[hazard]} accent="green" />
+            {videos[hazard] && <VideoResource {...videos[hazard]!} />}
           </>
         )}
       </motion.div>
 
-      <AskCaraChat open={chatOpen} onClose={() => setChatOpen(false)} hazard={hazard} />
+      <AskCaraChat open={chatOpen} onClose={() => setChatOpen(false)} hazard={hazard} date={date} />
     </div>
   );
 }
