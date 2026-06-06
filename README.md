@@ -3,7 +3,7 @@
 CARA is a phone app for caregivers looking after elderly or vulnerable people in
 Singapore during health threats like **COVID-19** and **dengue**. It pulls
 together public health information and turns it into plain, personalised advice
-for the person you care for.
+for the person you care for
 
 This repo is a **frontend-only prototype** (no backend) built for a hackathon
 
