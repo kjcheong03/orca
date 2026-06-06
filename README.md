@@ -40,7 +40,7 @@ Other features:
 
 ## Tech
 
-- **Next.js 15** (App Router) + **React 19** + **TypeScript**
+- **Next.js 15** (App Router) + **React 19** + **TypeScript**.
 - **Tailwind CSS v4** for styling
 - **framer-motion** for the mascot and animations
 - **Leaflet + Mapbox** for the dengue cluster map
