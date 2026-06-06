@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, ChevronDown, FileText, HeartPulse, LogOut, MapPin, Pencil, Pill, Plus, Trash2, User, X } from "lucide-react";
+import { Check, ChevronDown, FileText, Globe, HeartPulse, LogOut, MapPin, Pencil, Pill, Plus, Trash2, User, X } from "lucide-react";
 import AddressFields from "@/components/AddressFields";
 import { useApp } from "@/context/AppContext";
-import { languageNames } from "@/lib/i18n";
+import { languageNames, languageOrder } from "@/lib/i18n";
 import {
   blankMedicine,
   blankProfile,
@@ -102,7 +102,7 @@ function IconButton({
 }
 
 export default function ProfileScreen() {
-  const { t, tx, lang, openLangPicker } = useApp();
+  const { t, tx, lang, setLang } = useApp();
   const [profiles, setProfiles] = useState<ElderProfile[]>(defaultProfiles);
   const [activeId, setActiveId] = useState("p-default");
   const [editing, setEditing] = useState(false);
@@ -112,6 +112,7 @@ export default function ProfileScreen() {
   // The caregiver's own profile (name + contact) — used to prefill request forms.
   const [caregiver, setCaregiver] = useState<CaregiverProfile>(defaultCaregiver);
   const [caregiverOpen, setCaregiverOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
 
   // localStorage is client-only — load after mount (initial render uses defaults,
   // matching the server render to avoid a hydration mismatch).
@@ -190,51 +191,11 @@ export default function ProfileScreen() {
   return (
     <div className="px-4 pb-8 pt-4 lg:pt-8">
       <div className="mx-auto w-full max-w-2xl">
-        {/* Toolbar — utility actions (incl. language) on the top row; the profile
-            switcher (+ add) sits on its own row just below. */}
-        <div className="mb-3">
-          <div className="flex items-center justify-between gap-2">
-            {/* Language switcher — left-aligned white dropdown showing the name. */}
-            <button
-              type="button"
-              onClick={openLangPicker}
-              aria-label={tx("Change language")}
-              title={tx("Change language")}
-              className="flex h-9 shrink-0 items-center gap-2 rounded-xl bg-white px-3 text-[13px] font-semibold text-ink shadow-sm ring-1 ring-black/10 transition-colors hover:border-brand"
-            >
-              {languageNames[lang]}
-              <ChevronDown size={16} className="text-faint" />
-            </button>
-
-            <div className="flex items-center gap-2">
-            {editing ? (
-              <>
-                {canDelete && (
-                  <IconButton label={tx("Delete profile")} onClick={deleteProfile} tone="danger">
-                    <Trash2 size={17} />
-                  </IconButton>
-                )}
-                <IconButton label={tx("Cancel")} onClick={cancel}>
-                  <X size={18} />
-                </IconButton>
-                <IconButton label={tx("Save")} onClick={save} tone="brand">
-                  <Check size={18} strokeWidth={2.6} />
-                </IconButton>
-              </>
-            ) : (
-              <>
-                <IconButton label={tx("Your profile")} onClick={() => setCaregiverOpen(true)}>
-                  <User size={16} />
-                </IconButton>
-                <IconButton label={tx("Log out")} onClick={() => { /* prototype: no auth yet */ }}>
-                  <LogOut size={16} />
-                </IconButton>
-              </>
-            )}
-            </div>
-          </div>
-
-          <div className="no-scrollbar -my-1 mt-3 flex items-center gap-2 overflow-x-auto py-1">
+        {/* Toolbar — one row: profile switcher (+ add) on the left; language globe,
+            caregiver profile, and logout on the right. */}
+        <div className="mb-3 flex items-center justify-between gap-2">
+          {/* Profile switcher */}
+          <div className="no-scrollbar -my-1 flex min-w-0 items-center gap-2 overflow-x-auto py-1">
             {profiles.map((p, i) => {
               const on = p.id === activeId;
               return (
@@ -263,6 +224,81 @@ export default function ProfileScreen() {
             >
               <Plus size={16} strokeWidth={2.5} />
             </button>
+          </div>
+
+          {/* Actions */}
+          <div className="flex shrink-0 items-center gap-2">
+            {editing ? (
+              <>
+                {canDelete && (
+                  <IconButton label={tx("Delete profile")} onClick={deleteProfile} tone="danger">
+                    <Trash2 size={17} />
+                  </IconButton>
+                )}
+                <IconButton label={tx("Cancel")} onClick={cancel}>
+                  <X size={18} />
+                </IconButton>
+                <IconButton label={tx("Save")} onClick={save} tone="brand">
+                  <Check size={18} strokeWidth={2.6} />
+                </IconButton>
+              </>
+            ) : (
+              <>
+                {/* Language — globe with a menu that rolls down from the icon */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setLangOpen((v) => !v)}
+                    aria-label={tx("Change language")}
+                    title={tx("Change language")}
+                    aria-expanded={langOpen}
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-card text-ink shadow-sm ring-1 ring-black/5 transition-colors hover:text-brand"
+                  >
+                    <Globe size={17} />
+                  </button>
+                  {langOpen && (
+                    <>
+                      {/* click-away */}
+                      <button
+                        type="button"
+                        aria-hidden
+                        tabIndex={-1}
+                        onClick={() => setLangOpen(false)}
+                        className="fixed inset-0 z-40 cursor-default"
+                      />
+                      <div className="pop-enter absolute right-0 top-full z-50 mt-2 w-48 origin-top overflow-hidden rounded-2xl bg-card p-1 shadow-[0_10px_30px_rgba(30,50,90,0.18)] ring-1 ring-black/5">
+                        {languageOrder.map((code) => {
+                          const on = code === lang;
+                          return (
+                            <button
+                              key={code}
+                              type="button"
+                              onClick={() => {
+                                setLang(code);
+                                setLangOpen(false);
+                              }}
+                              className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-[13.5px] font-semibold transition-colors ${
+                                on ? "bg-brand-soft text-brand" : "text-ink hover:bg-app"
+                              }`}
+                            >
+                              {languageNames[code]}
+                              {on && <Check size={16} strokeWidth={3} className="shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <IconButton label={tx("Your profile")} onClick={() => setCaregiverOpen(true)}>
+                  <User size={16} />
+                </IconButton>
+                <IconButton label={tx("Log out")} onClick={() => { /* prototype: no auth yet */ }}>
+                  <LogOut size={16} />
+                </IconButton>
+              </>
+            )}
           </div>
         </div>
 

@@ -140,7 +140,7 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
   const paged = shown.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-5rem-env(safe-area-inset-bottom))] w-full max-w-xl flex-col gap-5 px-4 pt-5 lg:min-h-[calc(100dvh-3.5rem)] lg:pt-8">
+    <div className="mx-auto flex h-[calc(100dvh-5rem-env(safe-area-inset-bottom))] w-full max-w-xl flex-col gap-5 px-4 pt-5 lg:h-[calc(100dvh-3.5rem)] lg:pt-8">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-3">
         <span className="-my-2 shrink-0">
@@ -183,13 +183,17 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
         </button>
       </div>
 
-      {/* Your requests — one encompassing card; the list scrolls inside it. The card
-          flex-fills the remaining height and stops just above the nav (gap below). */}
-      <div className="flex min-h-[460px] flex-col rounded-[22px] bg-card p-4 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
-        {/* Title + small B&W Open/Closed toggle on the same row */}
-        <div className="flex shrink-0 items-center justify-between gap-2 px-1">
-          <p className="text-[12px] font-bold uppercase tracking-wider text-faint">{tx("Your requests")}</p>
-          {requests.length > 0 && (
+      {/* Requests — one encompassing card; the list scrolls inside it while the control
+          row (tabs + pager) stays pinned. Labelled for screen readers since the visible
+          "Your requests" heading is gone. */}
+      <section className="flex min-h-0 flex-1 flex-col rounded-[22px] bg-card p-4 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
+        <p className="shrink-0 px-1 pb-2.5 text-[12px] font-bold uppercase tracking-wider text-faint">
+          {tx("Your requests")}
+        </p>
+
+        {/* Control row — Open/Closed on the left; compact pager on the right (>1 page) */}
+        {!loading && !error && requests.length > 0 && (
+          <div className="flex shrink-0 items-center justify-between gap-2 px-1">
             <SegmentedToggle<"open" | "closed">
               size="sm"
               fluid={false}
@@ -204,8 +208,33 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
                 { value: "closed", label: tx("Closed") },
               ]}
             />
-          )}
-        </div>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-0.5">
+                <button
+                  type="button"
+                  disabled={safePage === 0}
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  aria-label={tx("Previous page")}
+                  className="grid h-8 w-8 place-items-center rounded-full text-ink transition-transform active:scale-90 disabled:opacity-30"
+                >
+                  <ChevronLeft size={18} strokeWidth={2.4} />
+                </button>
+                <span className="text-[12.5px] font-semibold tabular-nums text-muted">
+                  {safePage + 1}/{totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={safePage >= totalPages - 1}
+                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                  aria-label={tx("Next page")}
+                  className="grid h-8 w-8 place-items-center rounded-full text-ink transition-transform active:scale-90 disabled:opacity-30"
+                >
+                  <ChevronRight size={18} strokeWidth={2.4} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <div className="mt-2.5 min-h-0 flex-1 space-y-2.5 overflow-hidden px-1 py-1">
@@ -239,8 +268,7 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
             </p>
           </div>
         ) : (
-          <div className="mt-2.5 flex min-h-0 flex-1 flex-col">
-            <div className="fade-enter flex-1 space-y-2.5 px-1 py-1">
+          <div className="fade-enter no-scrollbar mt-2.5 min-h-0 flex-1 space-y-2.5 overflow-y-auto px-1 py-1">
                 {paged.map(({ req, t }) => (
                   <button
                     key={`${req.id}-${t.id}`}
@@ -272,37 +300,9 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
                     </div>
                   </button>
                 ))}
-            </div>
-
-            {/* Pager — only shown when the active tab spills past one page. */}
-            {totalPages > 1 && (
-              <div className="mt-2 flex shrink-0 items-center justify-between px-1">
-                <button
-                  type="button"
-                  disabled={safePage === 0}
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  className="grid h-9 w-9 place-items-center rounded-full ring-1 ring-black/10 text-ink transition-transform active:scale-95 disabled:opacity-35"
-                  aria-label={tx("Previous page")}
-                >
-                  <ChevronLeft size={18} strokeWidth={2.4} />
-                </button>
-                <span className="text-[12.5px] font-semibold text-muted">
-                  {tx("Page")} {safePage + 1} / {totalPages}
-                </span>
-                <button
-                  type="button"
-                  disabled={safePage >= totalPages - 1}
-                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                  className="grid h-9 w-9 place-items-center rounded-full ring-1 ring-black/10 text-ink transition-transform active:scale-95 disabled:opacity-35"
-                  aria-label={tx("Next page")}
-                >
-                  <ChevronRight size={18} strokeWidth={2.4} />
-                </button>
-              </div>
-            )}
           </div>
         )}
-      </div>
+      </section>
 
       <AnimatePresence>
         {open && (
