@@ -12,6 +12,7 @@ import MediaCarousel from "@/components/MediaCarousel";
 import Mascot from "@/components/Mascot";
 import VideoResource from "@/components/VideoResource";
 import SegmentedToggle from "@/components/ui/SegmentedToggle";
+import { useApp } from "@/context/AppContext";
 import { guidance, news, videos } from "@/lib/media";
 import { patient } from "@/lib/data";
 import { getDengueScenario, HOME } from "@/lib/dengue";
@@ -41,21 +42,28 @@ const tierStyle: Record<Tier, { text: string; dot: string; soft: string }> = {
 };
 
 function TierBadge({ tier }: { tier: Tier }) {
+  const { tx } = useApp();
   const tone = tierStyle[tier];
   return (
     <span
       className={`flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold ${tone.soft} ${tone.text}`}
     >
       <span className={`h-2 w-2 rounded-full ${tone.dot}`} />
-      {tierLabel[tier]}
+      {tx(tierLabel[tier])}
     </span>
   );
+}
+
+/** The care recipient's conditions, joined with a localised "and". */
+function localizedConditions(tx: (s: string) => string): string {
+  return patient.conditions.map((c) => tx(c)).join(` ${tx("and")} `);
 }
 
 const cardCls = "rounded-[22px] bg-card p-5 shadow-[0_2px_14px_rgba(30,50,90,0.06)]";
 const shortName = patient.name.split(" ").slice(0, 2).join(" ");
 
 function SuggestionsCard({ suggestions, why }: { suggestions: Suggestion[]; why: string }) {
+  const { tx, txf } = useApp();
   const [whyOpen, setWhyOpen] = useState(false);
 
   useEffect(() => {
@@ -71,14 +79,14 @@ function SuggestionsCard({ suggestions, why }: { suggestions: Suggestion[]; why:
     <div className={cardCls}>
       <div className="flex items-start justify-between gap-3">
         <p className="text-[12px] font-bold uppercase tracking-wider text-faint">
-          For {shortName} today
+          {txf("For {name} today", { name: shortName })}
         </p>
         <button
           type="button"
           onClick={() => setWhyOpen(true)}
           className="shrink-0 text-[13px] font-semibold text-brand hover:underline"
         >
-          Why?
+          {tx("Why?")}
         </button>
       </div>
 
@@ -86,7 +94,7 @@ function SuggestionsCard({ suggestions, why }: { suggestions: Suggestion[]; why:
         {suggestions.map((s) => (
           <li key={s.text} className="flex gap-3">
             <Check className="mt-0.5 shrink-0 text-check" size={20} strokeWidth={3} aria-hidden />
-            <span className="text-[14px] leading-snug text-body">{s.text}</span>
+            <span className="text-[14px] leading-snug text-body">{tx(s.text)}</span>
           </li>
         ))}
       </ul>
@@ -114,12 +122,14 @@ function SuggestionsCard({ suggestions, why }: { suggestions: Suggestion[]; why:
               <X size={18} className="text-ink" />
             </button>
             <h2 id="why-title" className="display pr-10 text-[19px] text-ink">
-              Why these suggestions?
+              {tx("Why these suggestions?")}
             </h2>
             <p className="mt-3 text-[14.5px] leading-relaxed text-body">{why}</p>
             <p className="mt-3 text-[12.5px] leading-relaxed text-faint">
-              CARA tailors these to {shortName}&apos;s age and conditions. Detailed
-              reasoning is a work in progress.
+              {txf(
+                "CARA tailors these to {name}'s age and conditions. Detailed reasoning is a work in progress.",
+                { name: shortName },
+              )}
             </p>
           </div>
         </div>
@@ -154,6 +164,7 @@ function SwitchingSkeleton() {
 }
 
 export default function InfoScreen() {
+  const { tx } = useApp();
   const [hazard, setHazard] = useState<Hazard>(defaultHazard);
   const [date, setDate] = useState(defaultDate);
   const [chatOpen, setChatOpen] = useState(false);
@@ -212,8 +223,9 @@ export default function InfoScreen() {
         )}
       </div>
 
-      {/* Mascot, centered on its own and full-width so nothing overlaps it. */}
-      <div className="flex justify-center">
+      {/* Mascot, centered on its own and full-width so nothing overlaps it.
+          Negative top margin tightens the gap to the control row above. */}
+      <div className="-mt-3 flex justify-center">
         <button
           type="button"
           onClick={() => setChatOpen(true)}
@@ -229,8 +241,8 @@ export default function InfoScreen() {
           value={view}
           onChange={setView}
           options={[
-            { value: "overview", label: "Overview" },
-            { value: "resources", label: "Resources" },
+            { value: "overview", label: tx("Overview") },
+            { value: "resources", label: tx("Resources") },
           ]}
         />
       </div>
@@ -255,8 +267,8 @@ export default function InfoScreen() {
           )
         ) : (
           <>
-            <MediaCarousel title="Latest updates" items={news[hazard]} accent="blue" />
-            <MediaCarousel title="Guidance resources" items={guidance[hazard]} accent="green" />
+            <MediaCarousel title={tx("Latest updates")} items={news[hazard]} accent="blue" />
+            <MediaCarousel title={tx("Guidance resources")} items={guidance[hazard]} accent="green" />
             {videos[hazard] && <VideoResource {...videos[hazard]!} />}
           </>
         )}
@@ -268,6 +280,7 @@ export default function InfoScreen() {
 }
 
 function CovidCards({ date }: { date: string }) {
+  const { tx, txf } = useApp();
   const s = getScenario("covid", date);
   const TrendIcon =
     s.trendDir === "rising" ? TrendingUp : s.trendDir === "easing" ? TrendingDown : Minus;
@@ -277,6 +290,15 @@ function CovidCards({ date }: { date: string }) {
       : s.trendDir === "easing"
         ? "text-[#1a8f5e]"
         : "text-faint";
+
+  const elderlyStat = txf("{count} daily hospitalisations · {icu} in ICU", {
+    count: Math.round(s.point.seniorHosp ?? 0),
+    icu: Math.round(s.point.seniorIcu ?? 0),
+  });
+  const why = txf(
+    "At {age} with {conditions}, COVID-19 is far more likely to need hospital or ICU care.",
+    { age: patient.age, conditions: localizedConditions(tx) },
+  );
 
   return (
     <>
@@ -292,7 +314,7 @@ function CovidCards({ date }: { date: string }) {
           <span className="text-[26px] font-extrabold tracking-tight text-ink">
             {s.point.cases.toLocaleString("en-SG")}
           </span>
-          <span className="text-[14px] text-muted">weekly cases</span>
+          <span className="text-[14px] text-muted">{tx("weekly cases")}</span>
           {s.trendPct !== null && (
             <span className={`flex items-center gap-0.5 text-[14px] font-semibold ${trendColor}`}>
               <TrendIcon size={15} />
@@ -301,23 +323,28 @@ function CovidCards({ date }: { date: string }) {
           )}
         </div>
 
-        <p className="mt-1 text-[13px] text-muted">{s.elderlyStat}</p>
+        <p className="mt-1 text-[13px] text-muted">{elderlyStat}</p>
       </div>
 
-      <SuggestionsCard suggestions={s.suggestions} why={s.why} />
+      <SuggestionsCard suggestions={s.suggestions} why={why} />
     </>
   );
 }
 
 function DengueCards() {
+  const { tx, txf } = useApp();
   const d = getDengueScenario();
+  const why = txf(
+    "At {age} with {conditions}, dengue can hit harder — higher bleeding risk and sudden blood-pressure drops.",
+    { age: patient.age, conditions: localizedConditions(tx) },
+  );
 
   return (
     <>
       <div className={cardCls}>
         <div className="flex items-center justify-between gap-3">
           <p className="text-[12px] font-bold uppercase tracking-wider text-faint">
-            NEA · Live
+            NEA · {tx("Live")}
           </p>
           <TierBadge tier={d.tier} />
         </div>
@@ -337,7 +364,7 @@ function DengueCards() {
                   {c.locality}
                 </span>
                 <span className="text-[12px] text-faint">
-                  {c.cases} cases · {c.distanceKm} km
+                  {txf("{cases} cases · {km} km", { cases: c.cases, km: c.distanceKm })}
                 </span>
               </span>
             </li>
@@ -345,11 +372,14 @@ function DengueCards() {
         </ul>
 
         <p className="mt-3 text-[12px] text-faint">
-          {d.activeClusters} clusters active · {d.totalCases} cases islandwide
+          {txf("{count} clusters active · {cases} cases islandwide", {
+            count: d.activeClusters,
+            cases: d.totalCases,
+          })}
         </p>
       </div>
 
-      <SuggestionsCard suggestions={d.suggestions} why={d.why} />
+      <SuggestionsCard suggestions={d.suggestions} why={why} />
     </>
   );
 }

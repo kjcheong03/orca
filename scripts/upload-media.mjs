@@ -15,14 +15,16 @@ const BUCKET = "media";
 const LOCAL_DIR = "public/videos";
 const REMOTE_PREFIX = "videos";
 
+// English original + poster, plus one baked dubbed MP4 per language (single
+// audio track = that language, so native player controls "just work").
 const FILES = [
   { name: "self-test-kit.mp4", type: "video/mp4" },
   { name: "self-test-kit.webp", type: "image/webp" },
-  { name: "self-test-kit.id.mp3", type: "audio/mpeg" },
-  { name: "self-test-kit.ms.mp3", type: "audio/mpeg" },
-  { name: "self-test-kit.tl.mp3", type: "audio/mpeg" },
-  { name: "self-test-kit.zh.mp3", type: "audio/mpeg" },
-  { name: "self-test-kit.my.mp3", type: "audio/mpeg" },
+  { name: "self-test-kit.id.mp4", type: "video/mp4" },
+  { name: "self-test-kit.ms.mp4", type: "video/mp4" },
+  { name: "self-test-kit.tl.mp4", type: "video/mp4" },
+  { name: "self-test-kit.zh.mp4", type: "video/mp4" },
+  { name: "self-test-kit.my.mp4", type: "video/mp4" },
 ];
 
 async function envFromLocal(key) {

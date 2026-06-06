@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { Car, Compass, HandHeart, HeartHandshake, Package, UtensilsCrossed } from "lucide-react";
 import Mascot from "@/components/Mascot";
+import { useApp } from "@/context/AppContext";
 import {
   getOrganisation,
   supportTypeLabels,
@@ -29,13 +30,14 @@ const STATUS_CLS: Record<RequestStatus, string> = {
 };
 
 function StatusBadge({ status }: { status: RequestStatus }) {
+  const { tx } = useApp();
   return (
     <span
       className={`shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-semibold ${
         STATUS_CLS[status] ?? STATUS_CLS.Pending
       }`}
     >
-      {status}
+      {tx(status)}
     </span>
   );
 }
@@ -56,6 +58,7 @@ function partnersFor(task: RequestTaskSession): string {
 }
 
 export default function CommunityHome({ onStart }: { onStart: () => void }) {
+  const { tx } = useApp();
   const [requests, setRequests] = useState<RequestSession[]>([]);
   const [open, setOpen] = useState<{ session: RequestSession; task: RequestTaskSession } | null>(null);
 
@@ -70,14 +73,14 @@ export default function CommunityHome({ onStart }: { onStart: () => void }) {
           <Mascot size={52} variant="calm" animated={false} />
         </span>
         <div className="min-w-0">
-          <h1 className="text-[20px] font-extrabold leading-tight text-ink">Community Support</h1>
+          <h1 className="text-[20px] font-extrabold leading-tight text-ink">{tx("Community Support")}</h1>
         </div>
       </div>
 
       {/* What you can request + primary CTA */}
       <div className="rounded-[22px] bg-card p-5 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
         <p className="text-[14px] font-bold leading-snug text-ink">
-          Request for different types of support from our community partners.
+          {tx("Request for different types of support from our community partners.")}
         </p>
         <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-5">
           {SUPPORT_TYPES.map(({ label, Icon }) => (
@@ -86,7 +89,7 @@ export default function CommunityHome({ onStart }: { onStart: () => void }) {
                 <Icon size={20} strokeWidth={2.2} />
               </span>
               <span className="text-center text-[11.5px] font-semibold leading-tight text-ink">
-                {label}
+                {tx(label)}
               </span>
             </div>
           ))}
@@ -97,18 +100,18 @@ export default function CommunityHome({ onStart }: { onStart: () => void }) {
           className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-brand py-3.5 text-[15px] font-semibold text-white shadow-sm transition-transform active:scale-[0.99]"
         >
           <HandHeart size={18} strokeWidth={2.3} />
-          Request help
+          {tx("Request help")}
         </button>
       </div>
 
       {/* Your requests */}
       <div>
-        <p className="px-1 text-[12px] font-bold uppercase tracking-wider text-faint">Your requests</p>
+        <p className="px-1 text-[12px] font-bold uppercase tracking-wider text-faint">{tx("Your requests")}</p>
 
         {requests.length === 0 ? (
           <div className="mt-2 rounded-[20px] bg-card px-4 py-5 text-center shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
-            <p className="text-[14px] font-semibold text-ink">No active requests</p>
-            <p className="mt-0.5 text-[12.5px] text-muted">Requests you submit will appear here.</p>
+            <p className="text-[14px] font-semibold text-ink">{tx("No active requests")}</p>
+            <p className="mt-0.5 text-[12.5px] text-muted">{tx("Requests you submit will appear here.")}</p>
           </div>
         ) : (
           <div className="mt-2 space-y-3">
@@ -122,7 +125,7 @@ export default function CommunityHome({ onStart }: { onStart: () => void }) {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-[14px] font-bold text-ink">{supportTypeLabels[t.supportType]}</p>
+                      <p className="text-[14px] font-bold text-ink">{tx(supportTypeLabels[t.supportType])}</p>
                       <p className="mt-0.5 text-[12.5px] text-muted">{partnersFor(t)}</p>
                     </div>
                     <StatusBadge status={t.status} />

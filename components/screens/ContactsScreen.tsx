@@ -1,25 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Check,
   ChevronDown,
   HeartPulse,
   IdCard,
+  Languages,
+  Loader2,
   MapPin,
-  MessageCircle,
   MessageSquareWarning,
   Mic,
   Pencil,
   Pill,
   Plus,
+  Send,
+  Square,
   Trash2,
   X,
 } from "lucide-react";
 import { SolidPhone } from "@/components/glyphs";
 import { useApp } from "@/context/AppContext";
-import { ambulance, contacts, patient } from "@/lib/data";
+import { ambulance, contacts } from "@/lib/data";
+import { defaultProfiles, loadActiveProfile, type ElderProfile } from "@/lib/profiles";
 import type { Contact } from "@/lib/types";
 
 function initialsOf(name: string): string {
@@ -34,21 +38,32 @@ function initialsOf(name: string): string {
 }
 
 export default function ContactsScreen() {
-  const { t } = useApp();
+  const { t, tx, lang, tab } = useApp();
   const [list, setList] = useState<Contact[]>(contacts);
   const [formMode, setFormMode] = useState<{ type: "add" } | { type: "edit"; contact: Contact } | null>(null);
   const [actionsFor, setActionsFor] = useState<Contact | null>(null);
-  const [messageFor, setMessageFor] = useState<Contact | null>(null);
   const [careOpen, setCareOpen] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [msg, setMsg] = useState("");
+  const [sendOpen, setSendOpen] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+
+  // The care recipient shown here is the active profile (edited on the Profile
+  // screen). Screens stay mounted, so re-read it whenever this tab is opened.
+  const [profile, setProfile] = useState<ElderProfile>(() => defaultProfiles()[0]);
+  useEffect(() => {
+    setProfile(loadActiveProfile());
+  }, [tab]);
 
   // Care-card details — kept entirely separate from the alert message.
   const cardDetails = [
-    `${patient.name} (${patient.sex}, ${patient.age})`,
-    patient.address,
-    `Conditions: ${patient.conditions.join(", ")}`,
-    `Emergency medicine: ${patient.emergencyMedicine.map((m) => `${m.name} — ${m.dose}`).join("; ")}`,
+    `${profile.name} (${profile.sex}, ${profile.age})`,
+    profile.address,
+    `Conditions: ${profile.conditions.join(", ")}`,
+    `Emergency medicine: ${profile.emergencyMedicine.map((m) => `${m.name} — ${m.dose}`).join("; ")}`,
   ].join("\n");
 
   const saveContact = (name: string, relation: string, phone: string) => {
@@ -67,6 +82,49 @@ export default function ContactsScreen() {
     setActionsFor(null);
   };
 
+  // Voice input for the alert message (same pattern as Ask CARA): record →
+  // transcribe via /api/transcribe → drop the text into the box to review.
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const rec = new MediaRecorder(stream);
+      chunksRef.current = [];
+      rec.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      rec.onstop = async () => {
+        stream.getTracks().forEach((tr) => tr.stop());
+        const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
+        if (blob.size === 0) return;
+        setTranscribing(true);
+        try {
+          const form = new FormData();
+          form.append("audio", blob, "speech.webm");
+          form.append("lang", lang);
+          const res = await fetch("/api/transcribe", { method: "POST", body: form });
+          const data = await res.json();
+          if (data.text) setMsg((prev) => (prev ? `${prev} ${data.text}` : data.text));
+        } catch {
+          /* leave the box as-is on failure */
+        } finally {
+          setTranscribing(false);
+        }
+      };
+      recorderRef.current = rec;
+      rec.start();
+      setRecording(true);
+    } catch {
+      setRecording(false);
+    }
+  }
+
+  function stopRecording() {
+    const rec = recorderRef.current;
+    if (rec && rec.state !== "inactive") rec.stop();
+    recorderRef.current = null;
+    setRecording(false);
+  }
+
   return (
     <div className="mx-auto w-full max-w-md space-y-5 px-5 pb-8 pt-6 lg:pt-8">
       {/* Emergency Card — expandable, revealing the full care card */}
@@ -78,7 +136,7 @@ export default function ContactsScreen() {
           className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
         >
           <IdCard size={22} className="text-brand" />
-          <span className="flex-1 text-[15px] font-bold text-ink">Emergency Card</span>
+          <span className="flex-1 text-[15px] font-bold text-ink">{tx("Emergency Card")}</span>
           <ChevronDown
             size={18}
             className={`text-faint transition-transform ${careOpen ? "rotate-180" : ""}`}
@@ -95,21 +153,21 @@ export default function ContactsScreen() {
             >
               <div className="p-4">
                 <div className="overflow-hidden rounded-[18px] ring-1 ring-black/[0.07]">
-                  <div className="bg-brand px-5 py-4 text-white">
-                    <p className="text-[18px] font-bold leading-tight">{patient.name}</p>
+                  <div className="bg-gradient-to-br from-[#5b9be8] to-[#2563eb] px-5 py-4 text-white">
+                    <p className="text-[18px] font-bold leading-tight">{profile.name}</p>
                     <p className="mt-0.5 text-[15px] text-white/90">
-                      {patient.sex} · {patient.age}
+                      {tx(profile.sex)} · {profile.age}
                     </p>
                   </div>
                   <div className="space-y-4 px-5 py-5">
-                    <ProfileRow icon={<MapPin size={18} />} label="Address">
-                      {patient.address}
+                    <ProfileRow icon={<MapPin size={18} />} label={tx("Address")}>
+                      {profile.address}
                     </ProfileRow>
-                    <ProfileRow icon={<HeartPulse size={18} />} label="Conditions">
-                      {patient.conditions.join(", ")}
+                    <ProfileRow icon={<HeartPulse size={18} />} label={tx("Conditions")}>
+                      {profile.conditions.map((c) => tx(c)).join(", ")}
                     </ProfileRow>
-                    <ProfileRow icon={<Pill size={18} />} label="Emergency medicine">
-                      {patient.emergencyMedicine.map((m) => `${m.name} — ${m.dose}`).join("; ")}
+                    <ProfileRow icon={<Pill size={18} />} label={tx("Emergency medicine")}>
+                      {profile.emergencyMedicine.map((m) => `${m.name} — ${tx(m.dose)}`).join("; ")}
                     </ProfileRow>
                   </div>
                 </div>
@@ -128,7 +186,7 @@ export default function ContactsScreen() {
           className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
         >
           <MessageSquareWarning size={22} className="text-brand" />
-          <span className="flex-1 text-[15px] font-bold text-ink">Alert message</span>
+          <span className="flex-1 text-[15px] font-bold text-ink">{tx("Alert message")}</span>
           <ChevronDown
             size={18}
             className={`text-faint transition-transform ${alertOpen ? "rotate-180" : ""}`}
@@ -149,25 +207,53 @@ export default function ContactsScreen() {
                     value={msg}
                     onChange={(e) => setMsg(e.target.value)}
                     rows={5}
-                    placeholder="Type an alert message, or record one…"
+                    disabled={recording || transcribing}
+                    placeholder={
+                      recording
+                        ? tx("Listening…")
+                        : transcribing
+                          ? tx("Transcribing…")
+                          : tx("Type an alert message, or record one…")
+                    }
                     className="w-full resize-none bg-transparent px-3.5 pt-2.5 text-[13.5px] leading-snug text-ink outline-none placeholder:text-faint"
                   />
                   <div className="flex items-center justify-between px-2.5 pb-2">
                     <button
                       type="button"
                       onClick={() => setMsg("")}
-                      disabled={!msg}
+                      disabled={!msg || recording || transcribing}
                       className="rounded-lg px-2 py-1 text-[12.5px] font-semibold text-faint transition-colors hover:text-ink disabled:opacity-40"
                     >
-                      Clear
+                      {tx("Clear")}
                     </button>
-                    <button
-                      type="button"
-                      aria-label="Record voice message"
-                      className="grid h-8 w-8 place-items-center rounded-full bg-app text-brand transition-transform active:scale-95"
-                    >
-                      <Mic size={16} />
-                    </button>
+                    {msg.trim() ? (
+                      <button
+                        type="button"
+                        onClick={() => setSendOpen(true)}
+                        aria-label={tx("Send")}
+                        className="grid h-9 w-9 place-items-center rounded-full bg-brand text-white transition-transform active:scale-95"
+                      >
+                        <Send size={16} />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={recording ? stopRecording : startRecording}
+                        disabled={transcribing}
+                        aria-label={recording ? tx("Stop recording") : tx("Record voice message")}
+                        className={`grid h-9 w-9 place-items-center rounded-full transition-transform active:scale-95 disabled:opacity-50 ${
+                          recording ? "animate-pulse bg-danger text-white" : "bg-app text-brand"
+                        }`}
+                      >
+                        {transcribing ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : recording ? (
+                          <Square size={14} className="fill-white" />
+                        ) : (
+                          <Mic size={16} />
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -189,7 +275,7 @@ export default function ContactsScreen() {
       {/* Emergency Contacts */}
       <section className="pt-1">
         <div className="mb-3 flex items-center gap-1.5 px-1">
-          <h2 className="text-[15px] font-bold text-ink">Emergency Contacts</h2>
+          <h2 className="text-[15px] font-bold text-ink">{tx("Emergency Contacts")}</h2>
           <button
             type="button"
             onClick={() => setFormMode({ type: "add" })}
@@ -215,14 +301,6 @@ export default function ContactsScreen() {
                   <span className="text-[12px] font-medium text-faint">{c.relation}</span>
                 </span>
                 <span className="mt-0.5 block text-[13px] leading-tight text-muted">{c.phone}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setMessageFor(c)}
-                aria-label={`Message ${c.name}`}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-app text-brand transition-transform active:scale-95"
-              >
-                <MessageCircle size={17} />
               </button>
               <a
                 href={`tel:${c.phone.replace(/\s/g, "")}`}
@@ -255,31 +333,72 @@ export default function ContactsScreen() {
           onDelete={() => deleteContact(actionsFor.id)}
         />
       )}
-      {messageFor && (
-        <ContactMessageSheet
-          contact={messageFor}
+      {sendOpen && (
+        <AlertSendSheet
+          contacts={list}
+          alertText={msg}
           cardDetails={cardDetails}
-          alertMessage={msg}
-          onClose={() => setMessageFor(null)}
+          onClose={() => setSendOpen(false)}
         />
       )}
     </div>
   );
 }
 
-function ContactMessageSheet({
-  contact,
+function Checkbox({ on }: { on: boolean }) {
+  return (
+    <span
+      className={`grid h-5 w-5 shrink-0 place-items-center rounded-[6px] border-2 transition-colors ${
+        on ? "border-brand bg-brand text-white" : "border-black/25"
+      }`}
+    >
+      {on && <Check size={13} strokeWidth={3.5} />}
+    </span>
+  );
+}
+
+function Switch({ on }: { on: boolean }) {
+  return (
+    <span className={`relative h-6 w-10 shrink-0 rounded-full transition-colors ${on ? "bg-brand" : "bg-black/20"}`}>
+      <span
+        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-all ${on ? "left-[18px]" : "left-0.5"}`}
+      />
+    </span>
+  );
+}
+
+// Recipient languages the alert can be sent in. The first is the default.
+const SEND_LANGS: { code: string; label: string }[] = [
+  { code: "en", label: "English" },
+  { code: "zh", label: "中文" },
+  { code: "ms", label: "Bahasa Melayu" },
+  { code: "ta", label: "தமிழ்" },
+  { code: "id", label: "Bahasa Indonesia" },
+  { code: "tl", label: "Tagalog" },
+  { code: "my", label: "မြန်မာ" },
+];
+
+/** Compose-first alert flow: pick recipients (default none), choose the
+ *  recipient's language (the alert is translated to it), optionally attach the
+ *  emergency card, then fire one SMS to all selected numbers. */
+function AlertSendSheet({
+  contacts,
+  alertText,
   cardDetails,
-  alertMessage,
   onClose,
 }: {
-  contact: Contact;
+  contacts: Contact[];
+  alertText: string;
   cardDetails: string;
-  alertMessage: string;
   onClose: () => void;
 }) {
+  const { tx, txf, lang } = useApp();
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [withCard, setWithCard] = useState(false);
-  const [withAlert, setWithAlert] = useState(false);
+  const [translateOn, setTranslateOn] = useState(false);
+  const [targetCode, setTargetCode] = useState("en");
+  const [translated, setTranslated] = useState<string | null>(null);
+  const [translating, setTranslating] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -287,59 +406,180 @@ function ContactMessageSheet({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const parts: string[] = [];
-  if (withCard) parts.push(cardDetails);
-  if (withAlert && alertMessage.trim()) parts.push(alertMessage.trim());
-  const body = parts.join("\n\n");
-  const href = `sms:${contact.phone.replace(/\s/g, "")}${body ? `?&body=${encodeURIComponent(body)}` : ""}`;
+  // Only translate when the toggle is on and the chosen language differs from
+  // the compose language — otherwise there's nothing to translate.
+  useEffect(() => {
+    if (!translateOn || targetCode === lang || !alertText.trim()) {
+      setTranslated(null);
+      setTranslating(false);
+      return;
+    }
+    let cancelled = false;
+    setTranslating(true);
+    fetch("/api/translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: alertText, target: targetCode }),
+    })
+      .then((r) => r.json())
+      .then((d) => !cancelled && setTranslated(typeof d.text === "string" ? d.text : null))
+      .catch(() => !cancelled && setTranslated(null))
+      .finally(() => !cancelled && setTranslating(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [translateOn, targetCode, alertText, lang]);
 
-  const Option = ({
-    on,
-    onToggle,
-    label,
-  }: {
-    on: boolean;
-    onToggle: () => void;
-    label: string;
-  }) => (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-pressed={on}
-      className="flex w-full items-center gap-3 rounded-2xl bg-app px-4 py-3 text-left"
-    >
-      <span
-        className={`grid h-5 w-5 shrink-0 place-items-center rounded-[6px] border-2 transition-colors ${
-          on ? "border-brand bg-brand text-white" : "border-black/25"
-        }`}
-      >
-        {on && <Check size={13} strokeWidth={3.5} />}
-      </span>
-      <span className="text-[14px] font-semibold text-ink">{label}</span>
-    </button>
-  );
+  const toggle = (id: string) =>
+    setSelected((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  const allOn = contacts.length > 0 && selected.size === contacts.length;
+  const toggleAll = () => setSelected(allOn ? new Set() : new Set(contacts.map((c) => c.id)));
+
+  const outText =
+    translateOn && targetCode !== lang ? (translated ?? alertText.trim()) : alertText.trim();
+  const chosen = contacts.filter((c) => selected.has(c.id));
+  const numbers = chosen.map((c) => c.phone.replace(/\s/g, "")).join(",");
+  const body = `${outText}${withCard ? `\n\n${cardDetails}` : ""}`;
+  const href = `sms:${numbers}?&body=${encodeURIComponent(body)}`;
 
   return (
-    <div className="fade-enter fixed inset-0 z-40 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Send message">
+    <div
+      className="fade-enter fixed inset-0 z-40 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={tx("Send alert")}
+    >
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/40" />
-      <div className="pop-enter relative w-full max-w-xs rounded-[28px] bg-card p-5">
-        <p className="text-center text-[16px] font-bold text-ink">Message {contact.name}</p>
-        <p className="mt-0.5 text-center text-[13px] text-muted">Choose what to include</p>
-        <div className="mt-4 space-y-2">
-          <Option on={withCard} onToggle={() => setWithCard((v) => !v)} label="Add emergency card details" />
-          <Option on={withAlert} onToggle={() => setWithAlert((v) => !v)} label="Add alert message" />
+      <div className="pop-enter relative flex max-h-[86dvh] w-full max-w-sm flex-col rounded-[28px] bg-card">
+        <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-5">
+          <p className="text-[16px] font-bold text-ink">{tx("Send alert")}</p>
+          <button
+            type="button"
+            onClick={toggleAll}
+            className="shrink-0 text-[12.5px] font-semibold text-brand hover:underline"
+          >
+            {tx("Select all")}
+          </button>
         </div>
-        <a
-          href={href}
-          onClick={onClose}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-brand py-3 text-[14px] font-semibold text-white shadow-sm transition-transform active:scale-[0.99]"
-        >
-          <MessageCircle size={17} /> Send
-        </a>
+
+        <div className="no-scrollbar space-y-2 overflow-y-auto px-5">
+          {contacts.map((c) => {
+            const on = selected.has(c.id);
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => toggle(c.id)}
+                aria-pressed={on}
+                className="flex w-full items-center gap-3 rounded-2xl bg-app px-4 py-3 text-left"
+              >
+                <Checkbox on={on} />
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline gap-2 truncate">
+                    <span className="text-[14.5px] font-bold text-ink">{c.name}</span>
+                    <span className="text-[12px] text-faint">{c.relation}</span>
+                  </span>
+                  <span className="block text-[12.5px] text-muted">{c.phone}</span>
+                </span>
+              </button>
+            );
+          })}
+
+          <div className="mt-1 border-t border-black/[0.07] pt-1">
+            <button
+              type="button"
+              onClick={() => setWithCard((v) => !v)}
+              aria-pressed={withCard}
+              className="flex w-full items-center gap-3 px-1 py-2 text-left"
+            >
+              <IdCard size={18} className="shrink-0 text-brand" />
+              <span className="flex-1 text-[14px] font-semibold text-ink">{tx("Include emergency card")}</span>
+              <Switch on={withCard} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setTranslateOn((v) => !v)}
+              aria-pressed={translateOn}
+              className="flex w-full items-center gap-3 px-1 py-2 text-left"
+            >
+              <Languages size={18} className="shrink-0 text-brand" />
+              <span className="flex-1 text-[14px] font-semibold text-ink">{tx("Translate message")}</span>
+              <Switch on={translateOn} />
+            </button>
+          </div>
+        </div>
+
+        {/* Recipient language + translated preview — only when translating */}
+        {translateOn && (
+        <div className="border-t border-black/[0.06] px-5 pt-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[12px] font-bold uppercase tracking-wider text-faint">{tx("Send in")}</span>
+            <div className="relative">
+              <select
+                value={targetCode}
+                onChange={(e) => setTargetCode(e.target.value)}
+                className="appearance-none rounded-lg border border-black/10 bg-white py-1.5 pl-3 pr-8 text-[13px] font-semibold text-ink outline-none focus:border-brand"
+              >
+                {SEND_LANGS.map((l) => (
+                  <option key={l.code} value={l.code}>
+                    {l.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-faint" />
+            </div>
+          </div>
+          {alertText.trim() && (
+            <div className="mt-2 max-h-24 overflow-y-auto rounded-xl bg-app px-3 py-2 text-[13px] leading-snug text-body">
+              {translating ? (
+                <span className="flex items-center gap-1.5 text-faint">
+                  <Loader2 size={14} className="animate-spin" /> {tx("Translating…")}
+                </span>
+              ) : (
+                outText
+              )}
+            </div>
+          )}
+        </div>
+        )}
+
+        <div className="px-5 pb-5 pt-3">
+          {chosen.length === 0 ? (
+            <button
+              type="button"
+              disabled
+              className="w-full rounded-full bg-[#d5d9e1] py-3.5 text-[15px] font-semibold text-[#6b7280]"
+            >
+              {tx("Select recipients")}
+            </button>
+          ) : translating ? (
+            <button
+              type="button"
+              disabled
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-[#d5d9e1] py-3.5 text-[15px] font-semibold text-[#6b7280]"
+            >
+              <Loader2 size={16} className="animate-spin" /> {tx("Translating…")}
+            </button>
+          ) : (
+            <a
+              href={href}
+              onClick={onClose}
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-brand py-3.5 text-[15px] font-semibold text-white shadow-sm transition-transform active:scale-[0.99]"
+            >
+              <Send size={17} /> {txf("Send to {count}", { count: chosen.length })}
+            </a>
+          )}
+        </div>
       </div>
     </div>
   );
 }
+
 
 function ContactActionsSheet({
   contact,
@@ -352,6 +592,7 @@ function ContactActionsSheet({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { tx } = useApp();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
@@ -377,21 +618,21 @@ function ContactActionsSheet({
             onClick={onEdit}
             className="flex w-full items-center justify-center gap-2 rounded-full bg-app py-3 text-[14px] font-semibold text-ink transition-colors hover:bg-subtle"
           >
-            <Pencil size={16} /> Edit
+            <Pencil size={16} /> {tx("Edit")}
           </button>
           <button
             type="button"
             onClick={onDelete}
             className="flex w-full items-center justify-center gap-2 rounded-full bg-danger-soft py-3 text-[14px] font-semibold text-[#b42318] transition-colors hover:brightness-95"
           >
-            <Trash2 size={16} /> Delete
+            <Trash2 size={16} /> {tx("Delete")}
           </button>
           <button
             type="button"
             onClick={onClose}
             className="w-full rounded-full py-2.5 text-[14px] font-semibold text-muted transition-colors hover:text-ink"
           >
-            Cancel
+            {tx("Cancel")}
           </button>
         </div>
       </div>
@@ -408,6 +649,7 @@ function ContactFormSheet({
   onClose: () => void;
   onSave: (name: string, relation: string, phone: string) => void;
 }) {
+  const { tx } = useApp();
   const [name, setName] = useState(initial?.name ?? "");
   const [relation, setRelation] = useState(initial?.relation ?? "");
   const [phone, setPhone] = useState(initial?.phone ?? "");
@@ -441,7 +683,7 @@ function ContactFormSheet({
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/40" />
       <div className="pop-enter relative w-full max-w-md rounded-[28px] bg-app p-5">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="display text-[20px] text-ink">{initial ? "Edit contact" : "Add contact"}</h2>
+          <h2 className="display text-[20px] text-ink">{initial ? tx("Edit contact") : tx("Add contact")}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -455,30 +697,30 @@ function ContactFormSheet({
         <div className="space-y-4 rounded-[22px] bg-white p-5 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
           <div>
             <label className={`mb-1.5 flex items-center gap-1 text-[13px] font-semibold ${nameErr ? "text-danger" : "text-ink"}`}>
-              Name<span className="text-danger">*</span>
+              {tx("Name")}<span className="text-danger">*</span>
             </label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Mr Tan Wei Ming"
+              placeholder={tx("e.g. Mr Tan Wei Ming")}
               className={`${inputCls} ${nameErr ? "border-danger" : "border-black/10"}`}
             />
-            {nameErr && <p className="mt-1 text-[12px] font-medium text-danger">Please add a name</p>}
+            {nameErr && <p className="mt-1 text-[12px] font-medium text-danger">{tx("Please add a name")}</p>}
           </div>
 
           <div>
-            <label className="mb-1.5 block text-[13px] font-semibold text-ink">Relationship</label>
+            <label className="mb-1.5 block text-[13px] font-semibold text-ink">{tx("Relationship")}</label>
             <input
               value={relation}
               onChange={(e) => setRelation(e.target.value)}
-              placeholder="e.g. Son"
+              placeholder={tx("e.g. Son")}
               className={`${inputCls} border-black/10`}
             />
           </div>
 
           <div>
             <label className={`mb-1.5 flex items-center gap-1 text-[13px] font-semibold ${phoneErr ? "text-danger" : "text-ink"}`}>
-              Contact number<span className="text-danger">*</span>
+              {tx("Contact number")}<span className="text-danger">*</span>
             </label>
             <input
               type="tel"
@@ -487,7 +729,7 @@ function ContactFormSheet({
               placeholder="+65 9123 4567"
               className={`${inputCls} ${phoneErr ? "border-danger" : "border-black/10"}`}
             />
-            {phoneErr && <p className="mt-1 text-[12px] font-medium text-danger">Please add a number</p>}
+            {phoneErr && <p className="mt-1 text-[12px] font-medium text-danger">{tx("Please add a number")}</p>}
           </div>
         </div>
 
@@ -496,7 +738,7 @@ function ContactFormSheet({
           onClick={save}
           className="mt-4 w-full rounded-full bg-brand py-3.5 text-[15px] font-semibold text-white shadow-sm"
         >
-          {initial ? "Save changes" : "Add contact"}
+          {initial ? tx("Save changes") : tx("Add contact")}
         </button>
       </div>
     </div>

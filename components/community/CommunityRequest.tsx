@@ -8,7 +8,9 @@ import ChooseHelp from "@/components/community/ChooseHelp";
 import ContactDetails, { contactFieldId, type ContactInfo } from "@/components/community/ContactDetails";
 import DetailsForm, { fieldDomId } from "@/components/community/DetailsForm";
 import ReviewMatch from "@/components/community/ReviewMatch";
+import { useApp } from "@/context/AppContext";
 import { patient } from "@/lib/data";
+import { composeAddress, ensureAddressParts, loadActiveProfile } from "@/lib/profiles";
 import {
   getSupportTemplate,
   isFieldVisible,
@@ -93,6 +95,7 @@ function StepIndicator({
   maxReachable: number;
   onStepClick: (n: number) => void;
 }) {
+  const { tx } = useApp();
   return (
     <div className="flex items-center justify-center gap-1.5">
       {STEPS.map((label, i) => {
@@ -124,7 +127,7 @@ function StepIndicator({
                   current ? "font-semibold text-ink" : "font-medium text-faint"
                 }`}
               >
-                {label}
+                {tx(label)}
               </span>
             </button>
             {n < STEPS.length && <span className="h-px w-5 bg-black/10 sm:w-8" />}
@@ -136,20 +139,29 @@ function StepIndicator({
 }
 
 export default function CommunityRequest({ onExit }: { onExit: () => void }) {
+  const { tx } = useApp();
   const [step, setStep] = useState(1);
   const [tasks, setTasks] = useState<DraftTasks>({});
   const [errors, setErrors] = useState<Partial<Record<SupportTypeId, Record<string, string>>>>({});
-  const [contact, setContact] = useState<ContactInfo>({
-    caregiverName: "Chloe",
-    contactNumber: "+65 8123 4567",
-    contactMethod: "WhatsApp",
-    email: "",
-    careRecipientName: shortName,
-    generalArea: "Ang Mo Kio",
-    address: "",
-    postalCode: "",
-    accessNotes: "",
-    relationship: "",
+  // Prefill from the active elderly profile (postal/floor/unit + composed
+  // address), so Step 3's address matches what's saved on the Profile screen.
+  const [contact, setContact] = useState<ContactInfo>(() => {
+    const a = ensureAddressParts(loadActiveProfile());
+    return {
+      caregiverName: "Chloe",
+      contactNumber: "+65 8123 4567",
+      contactMethod: "WhatsApp",
+      email: "",
+      careRecipientName: a.name.split(" ").slice(0, 2).join(" ") || shortName,
+      generalArea: "Ang Mo Kio",
+      address: composeAddress(a),
+      postalCode: a.postalCode ?? "",
+      addressLine: a.addressLine ?? "",
+      floor: a.floor ?? "",
+      unit: a.unit ?? "",
+      accessNotes: "",
+      relationship: "",
+    };
   });
   const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
   const [step1Errors, setStep1Errors] = useState<SupportTypeId[]>([]);
@@ -270,7 +282,7 @@ export default function CommunityRequest({ onExit }: { onExit: () => void }) {
     if (contact.contactMethod === "Email" && !contact.email.trim()) e.email = "Please add an email address";
     if (!contact.careRecipientName.trim()) e.careRecipientName = "Please add a name";
     if (addressRequired) {
-      if (!contact.address.trim()) e.address = "Please add an address";
+      // Address is auto-filled from the postal code, so that's the field to check.
       if (!contact.postalCode.trim()) e.postalCode = "Please add a postal code";
     } else if (areaNeeded && !contact.generalArea.trim()) {
       e.generalArea = "Please choose an area";
@@ -379,10 +391,10 @@ export default function CommunityRequest({ onExit }: { onExit: () => void }) {
         </span>
         <div className="min-w-0">
           <h1 className="text-[20px] font-extrabold leading-tight text-ink">
-            {step === 1 && "What help do you need?"}
-            {step === 2 && "Tell us what's needed"}
-            {step === 3 && "Your details"}
-            {step === 4 && "Review who can help"}
+            {step === 1 && tx("What help do you need?")}
+            {step === 2 && tx("Tell us what's needed")}
+            {step === 3 && tx("Your details")}
+            {step === 4 && tx("Review who can help")}
           </h1>
         </div>
       </div>
@@ -414,7 +426,7 @@ export default function CommunityRequest({ onExit }: { onExit: () => void }) {
           <>
             {Object.keys(errors).length > 0 && (
               <p className="rounded-2xl bg-danger-soft px-4 py-3 text-[13px] font-semibold text-[#b42318] ring-1 ring-danger/20">
-                Please complete the highlighted fields to continue.
+                {tx("Please complete the highlighted fields to continue.")}
               </p>
             )}
             <DetailsForm tasks={tasks} errors={errors} onChangeDetail={changeDetail} />
@@ -425,7 +437,7 @@ export default function CommunityRequest({ onExit }: { onExit: () => void }) {
           <>
             {Object.keys(contactErrors).length > 0 && (
               <p className="rounded-2xl bg-danger-soft px-4 py-3 text-[13px] font-semibold text-[#b42318] ring-1 ring-danger/20">
-                Please complete the highlighted fields to continue.
+                {tx("Please complete the highlighted fields to continue.")}
               </p>
             )}
             <ContactDetails
@@ -434,6 +446,12 @@ export default function CommunityRequest({ onExit }: { onExit: () => void }) {
               showAddress={addressRequired}
               showArea={areaNeeded}
               onChange={(k, v) => setContact((c) => ({ ...c, [k]: v }))}
+              onAddressChange={(partial) =>
+                setContact((c) => {
+                  const next = { ...c, ...partial };
+                  return { ...next, address: composeAddress(next) };
+                })
+              }
             />
           </>
         )}
@@ -462,7 +480,7 @@ export default function CommunityRequest({ onExit }: { onExit: () => void }) {
           onClick={goToDetails}
           className="w-full rounded-full bg-brand py-3.5 text-[15px] font-semibold text-white shadow-sm transition-colors disabled:bg-[#d5d9e1] disabled:text-[#6b7280] disabled:shadow-none"
         >
-          Continue
+          {tx("Continue")}
         </button>
       )}
       {step === 2 && (
@@ -473,14 +491,14 @@ export default function CommunityRequest({ onExit }: { onExit: () => void }) {
             className="flex items-center gap-1.5 rounded-full px-4 py-3 text-[14px] font-semibold text-body hover:text-ink"
           >
             <ArrowLeft size={18} />
-            Back
+            {tx("Back")}
           </button>
           <button
             type="button"
             onClick={continueFromRequest}
             className="flex-1 rounded-full bg-brand py-3.5 text-[15px] font-semibold text-white shadow-sm"
           >
-            Continue
+            {tx("Continue")}
           </button>
         </div>
       )}
@@ -492,14 +510,14 @@ export default function CommunityRequest({ onExit }: { onExit: () => void }) {
             className="flex items-center gap-1.5 rounded-full px-4 py-3 text-[14px] font-semibold text-body hover:text-ink"
           >
             <ArrowLeft size={18} />
-            Back
+            {tx("Back")}
           </button>
           <button
             type="button"
             onClick={continueFromContact}
             className="flex-1 rounded-full bg-brand py-3.5 text-[15px] font-semibold text-white shadow-sm"
           >
-            Continue to matching
+            {tx("Continue to matching")}
           </button>
         </div>
       )}

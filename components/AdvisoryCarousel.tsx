@@ -22,7 +22,7 @@ function previewOf(body: string): string {
  * broadcast sheet. Styled to match the original broadcast banner.
  */
 export default function AdvisoryCarousel() {
-  const { openBroadcast } = useApp();
+  const { openBroadcast, tx } = useApp();
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const count = broadcasts.length;
@@ -58,10 +58,10 @@ export default function AdvisoryCarousel() {
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[15px] font-bold text-ink">
-              {current.title}
+              {tx(current.title)}
             </span>
             <span className="block truncate text-[13px] text-muted">
-              {previewOf(current.body)}
+              {previewOf(tx(current.body))}
             </span>
           </span>
         </motion.div>

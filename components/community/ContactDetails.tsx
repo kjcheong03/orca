@@ -1,6 +1,8 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
+import AddressFields, { type AddressValue } from "@/components/AddressFields";
+import { useApp } from "@/context/AppContext";
 import { AREAS, CONTACT_METHODS } from "@/lib/community";
 
 export interface ContactInfo {
@@ -10,8 +12,12 @@ export interface ContactInfo {
   email: string;
   careRecipientName: string;
   generalArea: string;
+  /** Composed full address (built from the parts below). */
   address: string;
   postalCode: string;
+  addressLine: string;
+  floor: string;
+  unit: string;
   accessNotes: string;
   relationship: string;
 }
@@ -27,29 +33,32 @@ export default function ContactDetails({
   showAddress,
   showArea,
   onChange,
+  onAddressChange,
 }: {
   contact: ContactInfo;
   errors: Record<string, string>;
   showAddress: boolean;
   showArea: boolean;
   onChange: (key: keyof ContactInfo, value: string) => void;
+  onAddressChange: (partial: AddressValue) => void;
 }) {
+  const { tx } = useApp();
   const text = (key: keyof ContactInfo, label: string, placeholder: string, required?: boolean) => {
     const err = errors[key];
     return (
       <div id={contactFieldId(key)} className="scroll-mt-24">
         <label className={`mb-1.5 flex items-center gap-1 text-[13px] font-semibold ${err ? "text-danger" : "text-ink"}`}>
-          {label}
+          {tx(label)}
           {required && <span className="text-danger">*</span>}
         </label>
         <input
           type="text"
           value={contact[key]}
           onChange={(e) => onChange(key, e.target.value)}
-          placeholder={placeholder}
+          placeholder={tx(placeholder)}
           className={`${inputBase} ${err ? "border-danger" : "border-black/10"}`}
         />
-        {err && <p className="mt-1 text-[12px] font-medium text-danger">{err}</p>}
+        {err && <p className="mt-1 text-[12px] font-medium text-danger">{tx(err)}</p>}
       </div>
     );
   };
@@ -62,7 +71,7 @@ export default function ContactDetails({
 
         <div id={contactFieldId("contactMethod")} className="scroll-mt-24">
           <label className={`mb-1.5 flex items-center gap-1 text-[13px] font-semibold ${errors.contactMethod ? "text-danger" : "text-ink"}`}>
-            Preferred contact method
+            {tx("Preferred contact method")}
             <span className="text-danger">*</span>
           </label>
           <div className="flex flex-wrap gap-2">
@@ -76,12 +85,12 @@ export default function ContactDetails({
                   contact.contactMethod === m ? "bg-brand text-white" : "bg-app text-body hover:bg-subtle"
                 }`}
               >
-                {m}
+                {tx(m)}
               </button>
             ))}
           </div>
           {errors.contactMethod && (
-            <p className="mt-1 text-[12px] font-medium text-danger">{errors.contactMethod}</p>
+            <p className="mt-1 text-[12px] font-medium text-danger">{tx(errors.contactMethod)}</p>
           )}
         </div>
 
@@ -92,7 +101,7 @@ export default function ContactDetails({
         {showArea && (
           <div id={contactFieldId("generalArea")} className="scroll-mt-24">
             <label className={`mb-1.5 flex items-center gap-1 text-[13px] font-semibold ${errors.generalArea ? "text-danger" : "text-ink"}`}>
-              General area
+              {tx("General area")}
               <span className="text-danger">*</span>
             </label>
             <div className="relative">
@@ -102,28 +111,34 @@ export default function ContactDetails({
                 className={`${inputBase} appearance-none pr-9 ${errors.generalArea ? "border-danger" : "border-black/10"}`}
               >
                 <option value="" disabled>
-                  Select…
+                  {tx("Select…")}
                 </option>
                 {AREAS.map((a) => (
                   <option key={a} value={a}>
-                    {a}
+                    {tx(a)}
                   </option>
                 ))}
               </select>
               <ChevronDown size={18} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-faint" />
             </div>
-            <p className="mt-1 text-[12px] text-faint">Used to find partners that cover your area.</p>
-            {errors.generalArea && <p className="mt-1 text-[12px] font-medium text-danger">{errors.generalArea}</p>}
+            <p className="mt-1 text-[12px] text-faint">{tx("Used to find partners that cover your area.")}</p>
+            {errors.generalArea && <p className="mt-1 text-[12px] font-medium text-danger">{tx(errors.generalArea)}</p>}
           </div>
         )}
 
         {showAddress && (
           <>
             <hr className="border-black/[0.07]" />
-            {text("address", "Address", "Block, street & unit no.", true)}
-            {text("postalCode", "Postal code", "560123", true)}
+            <AddressFields
+              value={contact}
+              onChange={onAddressChange}
+              required
+              error={errors.postalCode}
+              postalId={contactFieldId("postalCode")}
+              labelClass="text-[13px] font-semibold text-ink"
+            />
             {text("accessNotes", "Access notes (optional)", "Gate code, lift access, etc.")}
-            <p className="-mt-1.5 text-[12px] text-faint">Used for delivery and home visits.</p>
+            <p className="-mt-1.5 text-[12px] text-faint">{tx("Used for delivery and home visits.")}</p>
           </>
         )}
 

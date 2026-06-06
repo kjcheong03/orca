@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { translate } from "@/lib/i18n";
+import { tx as txAuto, txf as txfAuto } from "@/lib/i18n/auto";
 import type { Language } from "@/lib/types";
 
 export type Tab = "info" | "support" | "contacts" | "profile";
@@ -20,6 +21,10 @@ interface AppState {
   setLang: (lang: Language) => void;
   /** Translate a key using the current language (with English fallback). */
   t: (key: string) => string;
+  /** Translate an English source string using the current language. */
+  tx: (s: string) => string;
+  /** Translate a templated string, then fill {placeholders}. */
+  txf: (template: string, params: Record<string, string | number>) => string;
 
   langPickerOpen: boolean;
   openLangPicker: () => void;
@@ -39,6 +44,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [broadcastOpen, setBroadcastOpen] = useState(false);
 
   const t = useCallback((key: string) => translate(lang, key), [lang]);
+  const tx = useCallback((s: string) => txAuto(lang, s), [lang]);
+  const txf = useCallback(
+    (template: string, params: Record<string, string | number>) => txfAuto(lang, template, params),
+    [lang],
+  );
 
   const value = useMemo<AppState>(
     () => ({
@@ -47,6 +57,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       lang,
       setLang,
       t,
+      tx,
+      txf,
       langPickerOpen,
       openLangPicker: () => setLangPickerOpen(true),
       closeLangPicker: () => setLangPickerOpen(false),
@@ -54,7 +66,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       openBroadcast: () => setBroadcastOpen(true),
       closeBroadcast: () => setBroadcastOpen(false),
     }),
-    [tab, lang, t, langPickerOpen, broadcastOpen],
+    [tab, lang, t, tx, txf, langPickerOpen, broadcastOpen],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

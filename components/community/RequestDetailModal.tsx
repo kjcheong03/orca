@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
+import { useApp } from "@/context/AppContext";
 import {
   getOrganisation,
   getSupportTemplate,
@@ -64,6 +65,7 @@ export default function RequestDetailModal({
   task: RequestTaskSession;
   onClose: () => void;
 }) {
+  const { tx, txf } = useApp();
   const tmpl = getSupportTemplate(task.supportType);
   const detailFields = (tmpl?.fields ?? [])
     .filter((f) => isFieldVisible(f, task.details, task.selectedSubtypes))
@@ -97,13 +99,13 @@ export default function RequestDetailModal({
         <div className="flex items-start justify-between gap-3 px-5 pb-3 pt-5">
           <div className="min-w-0">
             <h2 className="display text-[18px] leading-tight text-ink">
-              {supportTypeLabels[task.supportType]}
+              {tx(supportTypeLabels[task.supportType])}
             </h2>
-            <p className="mt-0.5 text-[12px] text-faint">Submitted {formatWhen(session.createdAt)}</p>
+            <p className="mt-0.5 text-[12px] text-faint">{txf("Submitted {when}", { when: formatWhen(session.createdAt) })}</p>
           </div>
           <div className="flex items-center gap-2">
             <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-semibold ${STATUS_CLS[task.status] ?? STATUS_CLS.Pending}`}>
-              {task.status}
+              {tx(task.status)}
             </span>
             <button type="button" onClick={onClose} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full bg-card shadow-sm">
               <X size={18} className="text-ink" />
@@ -114,17 +116,17 @@ export default function RequestDetailModal({
         <div className="no-scrollbar space-y-4 overflow-y-auto px-5 pb-8">
           {/* Handled by */}
           <section className="rounded-[18px] bg-card p-4 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
-            <p className="text-[12px] font-bold uppercase tracking-wide text-faint">Handled by</p>
+            <p className="text-[12px] font-bold uppercase tracking-wide text-faint">{tx("Handled by")}</p>
             {task.fulfilmentRoutes?.length ? (
               <ul className="mt-2 space-y-1.5">
                 {task.fulfilmentRoutes.map((r) => (
                   <li key={r.label} className="text-[13px]">
                     <span className="font-semibold text-ink">
-                      {r.label}
+                      {tx(r.label)}
                       {r.quantity ? ` ×${r.quantity}` : ""}
                     </span>
                     <span className="text-muted"> → {r.routeName}</span>
-                    <span className="block text-[12px] text-faint">{r.costLabel}</span>
+                    <span className="block text-[12px] text-faint">{tx(r.costLabel)}</span>
                   </li>
                 ))}
               </ul>
@@ -132,7 +134,7 @@ export default function RequestDetailModal({
               <div className="mt-1.5 text-[13px]">
                 <p className="font-semibold text-ink">{primaryName ?? "—"}</p>
                 {fallbackNames.length > 0 && (
-                  <p className="mt-1 text-[12px] text-faint">Backups: {fallbackNames.join(", ")}</p>
+                  <p className="mt-1 text-[12px] text-faint">{txf("Backups: {names}", { names: fallbackNames.join(", ") })}</p>
                 )}
               </div>
             )}
@@ -141,10 +143,10 @@ export default function RequestDetailModal({
           {/* Request details */}
           {detailFields.length > 0 && (
             <section className="rounded-[18px] bg-card p-4 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
-              <p className="text-[12px] font-bold uppercase tracking-wide text-faint">Request details</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-faint">{tx("Request details")}</p>
               <div className="mt-1.5 divide-y divide-black/[0.05]">
                 {detailFields.map((r) => (
-                  <Row key={r.label} label={r.label} value={r.value} />
+                  <Row key={r.label} label={tx(r.label)} value={tx(r.value)} />
                 ))}
               </div>
             </section>
@@ -152,24 +154,24 @@ export default function RequestDetailModal({
 
           {/* Contact */}
           <section className="rounded-[18px] bg-card p-4 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
-            <p className="text-[12px] font-bold uppercase tracking-wide text-faint">Contact</p>
+            <p className="text-[12px] font-bold uppercase tracking-wide text-faint">{tx("Contact")}</p>
             <div className="mt-1.5 divide-y divide-black/[0.05]">
-              <Row label="Caregiver" value={session.caregiverName} />
+              <Row label={tx("Caregiver")} value={session.caregiverName} />
               <Row
-                label="Contact"
-                value={`${session.contactNumber} · ${session.contactMethod}`}
+                label={tx("Contact")}
+                value={`${session.contactNumber} · ${tx(session.contactMethod)}`}
               />
-              {session.email && <Row label="Email" value={session.email} />}
-              <Row label="Care recipient" value={session.careRecipientName} />
-              {session.relationship && <Row label="Relationship" value={session.relationship} />}
+              {session.email && <Row label={tx("Email")} value={session.email} />}
+              <Row label={tx("Care recipient")} value={session.careRecipientName} />
+              {session.relationship && <Row label={tx("Relationship")} value={session.relationship} />}
               {session.address ? (
                 <>
-                  <Row label="Address" value={session.address} />
-                  {session.postalCode && <Row label="Postal code" value={session.postalCode} />}
-                  {session.accessNotes && <Row label="Access notes" value={session.accessNotes} />}
+                  <Row label={tx("Address")} value={session.address} />
+                  {session.postalCode && <Row label={tx("Postal code")} value={session.postalCode} />}
+                  {session.accessNotes && <Row label={tx("Access notes")} value={session.accessNotes} />}
                 </>
               ) : (
-                session.generalArea && <Row label="Area" value={session.generalArea} />
+                session.generalArea && <Row label={tx("Area")} value={tx(session.generalArea)} />
               )}
             </div>
           </section>

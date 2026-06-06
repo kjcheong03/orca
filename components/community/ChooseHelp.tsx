@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Car, Check, Compass, HeartHandshake, Package, UtensilsCrossed } from "lucide-react";
+import { useApp } from "@/context/AppContext";
 import { supportTemplates, type DraftTasks, type SupportTypeId } from "@/lib/community";
 
 const icons: Record<SupportTypeId, typeof Package> = {
@@ -23,6 +24,7 @@ export default function ChooseHelp({
   onToggleCategory: (type: SupportTypeId) => void;
   onToggleSubtype: (type: SupportTypeId, subtype: string) => void;
 }) {
+  const { tx } = useApp();
   return (
     <div className="space-y-3">
       {supportTemplates.map((tmpl) => {
@@ -56,7 +58,7 @@ export default function ChooseHelp({
                     active ? "font-bold" : "font-semibold"
                   }`}
                 >
-                  {tmpl.label}
+                  {tx(tmpl.label)}
                 </span>
               </span>
               <span
@@ -92,13 +94,13 @@ export default function ChooseHelp({
                               : "bg-app font-medium text-body hover:bg-subtle"
                           }`}
                         >
-                          {sub}
+                          {tx(sub)}
                         </button>
                       );
                     })}
                     {selected.length === 0 && incomplete.includes(tmpl.id) && (
                       <p className="w-full text-[12px] font-medium text-danger">
-                        Please select at least one option.
+                        {tx("Please select at least one option.")}
                       </p>
                     )}
                   </div>

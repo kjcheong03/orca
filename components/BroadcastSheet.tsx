@@ -7,7 +7,7 @@ import { useApp } from "@/context/AppContext";
 import { broadcasts } from "@/lib/data";
 
 export default function BroadcastSheet() {
-  const { broadcastOpen, closeBroadcast, t } = useApp();
+  const { broadcastOpen, closeBroadcast, t, tx } = useApp();
   const closeRef = useRef<HTMLButtonElement>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -71,7 +71,7 @@ export default function BroadcastSheet() {
                     <Megaphone size={18} className="text-white" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="display block text-[16px] text-ink">{b.title}</span>
+                    <span className="display block text-[16px] text-ink">{tx(b.title)}</span>
                     <span className="mt-0.5 block text-[12px] text-faint">
                       {b.source} · {b.time}
                     </span>
@@ -93,7 +93,7 @@ export default function BroadcastSheet() {
                       className="overflow-hidden border-t border-black/5"
                     >
                       <p className="px-5 pb-5 pt-4 text-[14px] leading-relaxed text-body">
-                        {b.body}
+                        {tx(b.body)}
                       </p>
                     </motion.div>
                   )}

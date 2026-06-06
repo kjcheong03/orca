@@ -5,7 +5,7 @@ import { useApp } from "@/context/AppContext";
 import { bannerBroadcast } from "@/lib/data";
 
 export default function BroadcastBanner() {
-  const { openBroadcast } = useApp();
+  const { openBroadcast, tx } = useApp();
   return (
     <button
       type="button"
@@ -17,10 +17,10 @@ export default function BroadcastBanner() {
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[15px] font-bold text-ink">
-          {bannerBroadcast.title}
+          {tx(bannerBroadcast.title)}
         </span>
         <span className="block truncate text-[13px] text-muted">
-          {bannerBroadcast.preview}
+          {tx(bannerBroadcast.preview)}
         </span>
       </span>
       <ChevronRight size={24} className="shrink-0 text-faint" />

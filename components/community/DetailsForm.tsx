@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, Minus, Plus, X } from "lucide-react";
+import { useApp } from "@/context/AppContext";
 import {
   getSupportTemplate,
   isFieldVisible,
@@ -24,11 +25,12 @@ function ItemQuantities({
   value: ItemQuantity[];
   onChange: (v: ItemQuantity[]) => void;
 }) {
+  const { tx } = useApp();
   const items = Array.isArray(value) ? value : [];
   const update = (i: number, patch: Partial<ItemQuantity>) =>
     onChange(items.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
 
-  if (items.length === 0) return <p className="text-[13px] text-faint">No items selected.</p>;
+  if (items.length === 0) return <p className="text-[13px] text-faint">{tx("No items selected.")}</p>;
 
   return (
     <div className="space-y-2.5">
@@ -36,13 +38,13 @@ function ItemQuantities({
         const isOther = it.item === "Other item";
         return (
           <div key={it.item} className="rounded-xl border border-black/10 bg-white p-3">
-            <p className="text-[13.5px] font-semibold text-ink">{it.item}</p>
+            <p className="text-[13.5px] font-semibold text-ink">{tx(it.item)}</p>
             {isOther && (
               <input
                 type="text"
                 value={it.customItem ?? ""}
                 onChange={(e) => update(i, { customItem: e.target.value })}
-                placeholder="Specify item (e.g. adult diapers)"
+                placeholder={tx("Specify item (e.g. adult diapers)")}
                 className={`${inputBase} mt-2 border-black/10`}
               />
             )}
@@ -51,12 +53,12 @@ function ItemQuantities({
               min={1}
               value={String(it.quantity ?? "")}
               onChange={(e) => update(i, { quantity: e.target.value })}
-              placeholder="Quantity"
+              placeholder={tx("Quantity")}
               className={`${inputBase} mt-2 w-32 border-black/10`}
             />
             {isOther && (
               <p className="mt-1.5 text-[12px] text-faint">
-                Availability will be confirmed by the partner.
+                {tx("Availability will be confirmed by the partner.")}
               </p>
             )}
           </div>
@@ -80,6 +82,7 @@ function MultiSelectDropdown({
   placeholder: string;
   onChange: (v: string[]) => void;
 }) {
+  const { tx, txf } = useApp();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const selected = Array.isArray(value) ? value : [];
@@ -105,7 +108,7 @@ function MultiSelectDropdown({
           error ? "border-danger" : "border-black/10"
         } ${selected.length ? "text-ink" : "text-faint"}`}
       >
-        {selected.length ? `${selected.length} selected` : placeholder}
+        {selected.length ? txf("{count} selected", { count: selected.length }) : placeholder}
         <ChevronDown size={18} className="ml-2 shrink-0 text-faint" />
       </button>
       {open && (
@@ -126,7 +129,7 @@ function MultiSelectDropdown({
                 >
                   {on && <Check size={12} strokeWidth={3.5} />}
                 </span>
-                {o}
+                {tx(o)}
               </button>
             );
           })}
@@ -139,12 +142,12 @@ function MultiSelectDropdown({
               key={o}
               className="inline-flex items-center gap-1 rounded-full bg-brand-soft py-1 pl-2.5 pr-1.5 text-[12.5px] font-semibold text-brand"
             >
-              {o}
+              {tx(o)}
               <button
                 type="button"
                 onClick={() => toggle(o)}
                 className="grid h-4 w-4 place-items-center rounded-full text-brand/70 hover:bg-brand/15 hover:text-brand"
-                aria-label={`Remove ${o}`}
+                aria-label={txf("Remove {item}", { item: o })}
               >
                 <X size={12} strokeWidth={3} />
               </button>
@@ -180,6 +183,8 @@ function Field({
   error?: string;
   onChange: (v: Value) => void;
 }) {
+  const { tx } = useApp();
+  const ph = (s?: string) => (s ? tx(s) : undefined);
   const borderCls = error ? "border-danger" : "border-black/10";
   const boxCls = `${inputBase} ${borderCls}`;
 
@@ -187,7 +192,7 @@ function Field({
   if (field.kind === "note") {
     return (
       <div id={id} className="scroll-mt-24 rounded-xl bg-app px-3.5 py-3 text-[12.5px] leading-snug text-muted">
-        {field.help}
+        {tx(field.help ?? "")}
       </div>
     );
   }
@@ -210,9 +215,9 @@ function Field({
           >
             {on && <Check size={13} strokeWidth={3.5} />}
           </span>
-          <span className={`text-[14px] ${error ? "text-danger" : "text-ink"}`}>{field.label}</span>
+          <span className={`text-[14px] ${error ? "text-danger" : "text-ink"}`}>{tx(field.label)}</span>
         </button>
-        {error && <p className="mt-1 text-[12px] font-medium text-danger">{error}</p>}
+        {error && <p className="mt-1 text-[12px] font-medium text-danger">{tx(error)}</p>}
       </div>
     );
   }
@@ -225,7 +230,7 @@ function Field({
         <textarea
           value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={field.placeholder}
+          placeholder={ph(field.placeholder)}
           rows={3}
           className={`${boxCls} resize-none`}
         />
@@ -238,7 +243,7 @@ function Field({
           min={0}
           value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={field.placeholder}
+          placeholder={ph(field.placeholder)}
           className={boxCls}
         />
       );
@@ -272,11 +277,11 @@ function Field({
             className={`${boxCls} appearance-none pr-9`}
           >
             <option value="" disabled>
-              Select…
+              {tx("Select…")}
             </option>
             {field.options?.map((o) => (
               <option key={o} value={o}>
-                {o}
+                {tx(o)}
               </option>
             ))}
           </select>
@@ -298,7 +303,7 @@ function Field({
               aria-pressed={value === o}
               className={chipCls(value === o)}
             >
-              {o}
+              {tx(o)}
             </button>
           ))}
         </div>
@@ -327,7 +332,7 @@ function Field({
                 >
                   {on && <Check size={12} strokeWidth={3.5} />}
                 </span>
-                {o}
+                {tx(o)}
               </button>
             );
           })}
@@ -372,7 +377,7 @@ function Field({
           options={field.options ?? []}
           value={(value as string[]) ?? []}
           error={!!error}
-          placeholder={field.placeholder ?? "Select…"}
+          placeholder={tx(field.placeholder ?? "Select…")}
           onChange={(v) => onChange(v)}
         />
       );
@@ -388,7 +393,7 @@ function Field({
           type="text"
           value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={field.placeholder}
+          placeholder={ph(field.placeholder)}
           className={boxCls}
         />
       );
@@ -397,12 +402,12 @@ function Field({
   return (
     <div id={id} className="scroll-mt-24">
       <label className={`mb-1.5 flex items-center gap-1 text-[13px] font-semibold ${error ? "text-danger" : "text-ink"}`}>
-        {field.label}
+        {tx(field.label)}
         {field.required && <span className="text-danger">*</span>}
       </label>
       {control}
-      {field.help && !error && <p className="mt-1 text-[12px] text-faint">{field.help}</p>}
-      {error && <p className="mt-1 text-[12px] font-medium text-danger">{error}</p>}
+      {field.help && !error && <p className="mt-1 text-[12px] text-faint">{tx(field.help)}</p>}
+      {error && <p className="mt-1 text-[12px] font-medium text-danger">{tx(error)}</p>}
     </div>
   );
 }
@@ -416,6 +421,7 @@ export default function DetailsForm({
   errors: Partial<Record<SupportTypeId, Record<string, string>>>;
   onChangeDetail: (type: SupportTypeId, key: string, value: Value) => void;
 }) {
+  const { tx } = useApp();
   const entries = (Object.entries(tasks) as [SupportTypeId, DraftTasks[SupportTypeId]][])
     .filter(([, t]) => (t?.subtypes.length ?? 0) > 0);
 
@@ -431,7 +437,7 @@ export default function DetailsForm({
             className="rounded-[22px] bg-card p-5 shadow-[0_2px_14px_rgba(30,50,90,0.06)]"
           >
             <p className="text-[12px] font-bold uppercase tracking-wider text-faint">
-              {tmpl.label}
+              {tx(tmpl.label)}
             </p>
             {(() => {
               const visible = tmpl.fields
@@ -471,13 +477,13 @@ export default function DetailsForm({
                 <div className="mt-4 space-y-5">
                   {groups.map((g) => (
                     <div key={g.subtype} className="space-y-4">
-                      {heading(g.subtype)}
+                      {heading(tx(g.subtype))}
                       <div className="space-y-4">{g.fields.map(renderField)}</div>
                     </div>
                   ))}
                   {shared.length > 0 && (
                     <div className="space-y-4">
-                      {groups.length === 0 && heading(task.subtypes.join(" · "))}
+                      {groups.length === 0 && heading(task.subtypes.map((s) => tx(s)).join(" · "))}
                       {shared.map(renderField)}
                     </div>
                   )}

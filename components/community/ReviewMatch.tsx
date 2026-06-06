@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ArrowLeft, Check, Info, Star, X } from "lucide-react";
 import { matchPartners, routeRequest, type MatchResult } from "@/lib/matching";
 import { calculateTaskCost, formatCostEstimate } from "@/lib/cost";
+import { useApp } from "@/context/AppContext";
 import { type ContactInfo } from "@/components/community/ContactDetails";
 import { persistRequest } from "@/lib/requestStore";
 import {
@@ -25,9 +26,10 @@ interface Selection {
 
 /** Green pill for a cost / availability label. */
 function LabelChip({ text }: { text: string }) {
+  const { tx } = useApp();
   return (
     <span className="inline-flex items-center rounded-full bg-[#d6f3e0] px-2 py-0.5 text-[11px] font-semibold text-[#0f7a4a]">
-      {text}
+      {tx(text)}
     </span>
   );
 }
@@ -82,6 +84,7 @@ function OrgLogo({ src, name, recommended }: { src?: string; name: string; recom
 
 /** Item/subtype-level fulfilment routes (supplies + food). */
 function RouteList({ routes }: { routes: FulfilmentRoute[] }) {
+  const { tx } = useApp();
   return (
     <>
       <div className="mt-3 space-y-2">
@@ -95,12 +98,12 @@ function RouteList({ routes }: { routes: FulfilmentRoute[] }) {
                   <p className="text-[15px] font-bold text-ink">{r.routeName}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5">
                     <span className="rounded-full bg-brand-soft px-2.5 py-1 text-[11.5px] font-semibold text-brand-dark">
-                      {r.label}
+                      {tx(r.label)}
                       {r.quantity ? ` ×${r.quantity}` : ""}
                     </span>
                     {!unavailable && <LabelChip text={r.costLabel} />}
                   </div>
-                  {unavailable && <p className="mt-1.5 text-[12px] text-faint">{r.status}</p>}
+                  {unavailable && <p className="mt-1.5 text-[12px] text-faint">{tx(r.status)}</p>}
                 </div>
               </div>
             </div>
@@ -128,6 +131,7 @@ export default function ReviewMatch({
   onBack: () => void;
   onReset: () => void;
 }) {
+  const { tx, txf } = useApp();
   const drafts = useMemo(
     () =>
       tasks.map(([type, t]) => ({
@@ -259,17 +263,19 @@ export default function ReviewMatch({
 
   // --- success state ---
   if (submitted) {
-    const reqWord = submitted.tasks.length === 1 ? "request" : "requests";
+    const reqWord = tx(submitted.tasks.length === 1 ? "request" : "requests");
     return (
       <div className="space-y-5">
         <div className="rounded-[24px] bg-card p-6 text-center shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
           <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#e6f5ee] text-[#147a4f]">
             <Check size={28} strokeWidth={3} />
           </span>
-          <h2 className="display mt-3 text-[20px] text-ink">Request sent</h2>
+          <h2 className="display mt-3 text-[20px] text-ink">{tx("Request sent")}</h2>
           <p className="mt-2.5 text-[13.5px] leading-relaxed text-muted">
-            CARA has sent your {reqWord} to the selected partners and active distribution channels.
-            They&apos;ll reach out via your chosen contact method.
+            {txf(
+              "CARA has sent your {req} to the selected partners and active distribution channels. They'll reach out via your chosen contact method.",
+              { req: reqWord },
+            )}
           </p>
         </div>
         <div className="rounded-[22px] bg-card p-5 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
@@ -277,13 +283,13 @@ export default function ReviewMatch({
             <div key={t.id} className="py-1.5 text-[14px]">
               <div className="flex items-start gap-2">
                 <Check size={18} className="mt-0.5 shrink-0 text-[#1a8f5e]" strokeWidth={3} />
-                <span className="font-semibold text-ink">{supportTypeLabels[t.supportType]}</span>
+                <span className="font-semibold text-ink">{tx(supportTypeLabels[t.supportType])}</span>
               </div>
               <div className="ml-6 text-[13px] text-body">
                 {t.fulfilmentRoutes?.length
                   ? t.fulfilmentRoutes.map((r) => (
                       <span key={r.label} className="block truncate">
-                        {r.label} → {r.routeName}
+                        {tx(r.label)} → {r.routeName}
                       </span>
                     ))
                   : getOrganisation(t.primaryOrganisationId)?.name}
@@ -296,7 +302,7 @@ export default function ReviewMatch({
           onClick={onReset}
           className="w-full rounded-full bg-brand py-3.5 text-[15px] font-semibold text-white shadow-sm"
         >
-          Back to my requests
+          {tx("Back to my requests")}
         </button>
       </div>
     );
@@ -314,7 +320,7 @@ export default function ReviewMatch({
         if (routes) {
           return (
             <section key={type} className="rounded-[22px] bg-card p-5 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
-              <p className="text-[15px] font-extrabold text-ink">{supportTypeLabels[type]}</p>
+              <p className="text-[15px] font-extrabold text-ink">{tx(supportTypeLabels[type])}</p>
               <RouteList routes={routes} />
             </section>
           );
@@ -328,16 +334,16 @@ export default function ReviewMatch({
         return (
           <section key={type} className="rounded-[22px] bg-card p-5 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
             {/* Header */}
-            <p className="text-[15px] font-extrabold text-ink">{supportTypeLabels[type]}</p>
+            <p className="text-[15px] font-extrabold text-ink">{tx(supportTypeLabels[type])}</p>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {d.selectedSubtypes.map((label) => (
                 <span key={label} className="rounded-full bg-brand-soft px-2.5 py-1 text-[11.5px] font-semibold text-brand-dark">
-                  {label}
+                  {tx(label)}
                 </span>
               ))}
             </div>
             {/* Recommended */}
-            <p className="mt-4 text-[12px] font-bold uppercase tracking-wide text-faint">Recommended partner</p>
+            <p className="mt-4 text-[12px] font-bold uppercase tracking-wide text-faint">{tx("Recommended partner")}</p>
             <div className="mt-2 rounded-2xl bg-card p-3.5 ring-2 ring-brand/45">
               {primary ? (
                 <div className="flex items-center gap-3">
@@ -346,7 +352,7 @@ export default function ReviewMatch({
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-[15px] font-bold text-ink">{primary.org.name}</p>
                       <button type="button" onClick={() => setChanging(type)} className="shrink-0 text-[12.5px] font-semibold text-brand hover:underline">
-                        Change
+                        {tx("Change")}
                       </button>
                     </div>
                     <Pills est={primaryEst ?? undefined} />
@@ -354,7 +360,7 @@ export default function ReviewMatch({
                 </div>
               ) : (
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-[13px] text-faint">No suitable partner available</p>
+                  <p className="text-[13px] text-faint">{tx("No suitable partner available")}</p>
                   <button type="button" onClick={() => setChanging(type)} className="shrink-0 text-[12.5px] font-semibold text-brand hover:underline">
                     Change
                   </button>
@@ -366,11 +372,11 @@ export default function ReviewMatch({
             {fallbackOptions.length > 0 && (
               <>
                 <div className="mt-4 flex items-center gap-1.5">
-                  <p className="text-[12px] font-bold uppercase tracking-wide text-faint">Backup partners</p>
+                  <p className="text-[12px] font-bold uppercase tracking-wide text-faint">{tx("Backup partners")}</p>
                   <button
                     type="button"
                     onClick={() => setInfoOpen(true)}
-                    aria-label="About backup partners"
+                    aria-label={tx("About backup partners")}
                     className="text-faint transition-colors hover:text-brand"
                   >
                     <Info size={15} />
@@ -392,7 +398,7 @@ export default function ReviewMatch({
                           <span className="block text-[13.5px] font-bold text-ink">{m.org.name}</span>
                           <Pills est={calculateTaskCost(d, m.org)} />
                           {!m.suitable && m.note && (
-                            <span className="mt-1 block text-[11.5px] font-medium text-danger">{m.note}</span>
+                            <span className="mt-1 block text-[11.5px] font-medium text-danger">{tx(m.note)}</span>
                           )}
                         </span>
                       </button>
@@ -416,7 +422,7 @@ export default function ReviewMatch({
           <Checkbox on={acknowledged} />
         </span>
         <span className="text-[13.5px] leading-snug text-body">
-          I understand CARA will share my contact and request details with the selected partners.
+          {tx("I understand CARA will share my contact and request details with the selected partners.")}
         </span>
       </button>
 
@@ -432,7 +438,7 @@ export default function ReviewMatch({
             <Checkbox on={costAck} />
           </span>
           <span className="text-[13.5px] leading-snug text-body">
-            For paid goods and services, I understand that partners will confirm the final costs with me.
+            {tx("For paid goods and services, I understand that partners will confirm the final costs with me.")}
           </span>
         </button>
       )}
@@ -444,7 +450,7 @@ export default function ReviewMatch({
           className="flex items-center gap-1.5 rounded-full px-4 py-3 text-[14px] font-semibold text-body hover:text-ink"
         >
           <ArrowLeft size={18} />
-          Back
+          {tx("Back")}
         </button>
         <button
           type="button"
@@ -452,7 +458,7 @@ export default function ReviewMatch({
           disabled={!acknowledged || (hasPaid && !costAck)}
           className="flex-1 rounded-full bg-brand py-3.5 text-[15px] font-semibold text-white shadow-sm transition-colors disabled:bg-[#d5d9e1] disabled:text-[#6b7280] disabled:shadow-none"
         >
-          Submit {count} request{count === 1 ? "" : "s"}
+          {txf("Submit {count} {req}", { count, req: tx(count === 1 ? "request" : "requests") })}
         </button>
       </div>
 
@@ -461,16 +467,16 @@ export default function ReviewMatch({
         <div className="fade-enter fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
           <button type="button" aria-label="Close" onClick={() => setInfoOpen(false)} className="absolute inset-0 bg-black/40" />
           <div className="pop-enter relative w-full max-w-sm rounded-[24px] bg-card p-6">
-            <p className="text-[15px] font-bold text-ink">Backup partners</p>
+            <p className="text-[15px] font-bold text-ink">{tx("Backup partners")}</p>
             <p className="mt-2 text-[14px] leading-relaxed text-body">
-              If the recommended partner can&apos;t help, CARA can try these backup partners.
+              {tx("If the recommended partner can't help, CARA can try these backup partners.")}
             </p>
             <button
               type="button"
               onClick={() => setInfoOpen(false)}
               className="mt-4 w-full rounded-full bg-brand py-2.5 text-[14px] font-semibold text-white"
             >
-              Got it
+              {tx("Got it")}
             </button>
           </div>
         </div>
@@ -509,6 +515,7 @@ function ChangePrimarySheet({
   onClose: () => void;
   onPick: (id: string) => void;
 }) {
+  const { tx } = useApp();
   const estFor = (org: Organisation) =>
     calculateTaskCost({ supportType: type, selectedSubtypes: subtypes, details }, org);
   return (
@@ -516,7 +523,7 @@ function ChangePrimarySheet({
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/40" />
       <div className="pop-enter relative flex max-h-[86dvh] w-full max-w-lg flex-col rounded-t-[28px] bg-app sm:rounded-[28px]">
         <div className="flex items-center justify-between px-5 pb-3 pt-5">
-          <h2 className="display text-[18px] text-ink">Choose a primary partner</h2>
+          <h2 className="display text-[18px] text-ink">{tx("Choose a primary partner")}</h2>
           <button type="button" onClick={onClose} aria-label="Close" className="flex h-9 w-9 items-center justify-center rounded-full bg-card shadow-sm">
             <X size={18} className="text-ink" />
           </button>
@@ -540,10 +547,10 @@ function ChangePrimarySheet({
                       <p className="text-[15px] font-bold text-ink">{m.org.name}</p>
                       {on && <Check size={18} className="shrink-0 text-brand" strokeWidth={3} />}
                     </div>
-                    <p className="mt-0.5 text-[12.5px] leading-snug text-muted">{m.org.description}</p>
+                    <p className="mt-0.5 text-[12.5px] leading-snug text-muted">{tx(m.org.description)}</p>
                     <Pills est={estFor(m.org)} />
-                    {!m.suitable && m.note && <p className="mt-1.5 text-[12px] font-medium text-danger">{m.note}</p>}
-                    {m.org.limitations[0] && <p className="mt-1.5 text-[12px] text-faint">Note: {m.org.limitations[0]}</p>}
+                    {!m.suitable && m.note && <p className="mt-1.5 text-[12px] font-medium text-danger">{tx(m.note)}</p>}
+                    {m.org.limitations[0] && <p className="mt-1.5 text-[12px] text-faint">{tx("Note:")} {tx(m.org.limitations[0])}</p>}
                   </div>
                 </div>
               </button>
