@@ -153,7 +153,7 @@ const CAREGIVER_KEY = "cara-caregiver";
 
 /** Mock defaults — the same caregiver we use throughout the prototype. */
 export function defaultCaregiver(): CaregiverProfile {
-  return { name: "Chloe", contactNumber: "+65 8123 4567", email: "chloe@example.com" };
+  return { name: "Chloe", contactNumber: "+65 8123 4567", email: "demo@orca.sg" };
 }
 
 export function loadCaregiver(): CaregiverProfile {

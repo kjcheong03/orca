@@ -173,7 +173,7 @@ export default function RequestDetailModal({
               <p className="mt-1 text-[13px] font-semibold text-ink">{task.assignedTo}</p>
             </div>
           )}
-          {task.partnerNotes && (
+          {task.partnerNotes && task.partnerNotes.trim() !== (task.rejectionReason ?? "").trim() && (
             <div className="rounded-[18px] bg-card p-4 ring-1 ring-black/[0.06]">
               <p className="text-[12px] font-bold uppercase tracking-wide text-faint">
                 {tx("Note from the partner")}

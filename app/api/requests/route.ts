@@ -155,7 +155,9 @@ export async function POST(req: Request) {
     caregiver_name: session.caregiverName,
     contact_number: session.contactNumber,
     contact_method: session.contactMethod,
-    email: session.email ?? null,
+    // Tag in-app submissions with the demo account email so they show in the curated
+    // no-login demo history (the GET filters on email = demo@orca.sg).
+    email: session.email || "demo@orca.sg",
     relationship: session.relationship ?? null,
     general_area: session.generalArea ?? null,
     address: session.address ?? null,
@@ -338,12 +340,21 @@ type RerouteRow = {
 
 export async function GET() {
   const sb = supabaseAdmin();
-  const { data, error } = await sb
+  // No caregiver auth yet → serve a curated, no-login demo history by default. The curated
+  // caregiver is the single demo account `demo@orca.sg` (008 rows + anything submitted in
+  // this app, which we tag with that email on POST). Filtering on this exact email marker
+  // hides the dashboard's operational seed (007, demo.caregiver.%@orca.sg) AND any stray
+  // null-email test rows. Set DEMO_MODE=false to return everything.
+  let query = sb
     .from("request_sessions")
     .select(
       "*, request_tasks(*, request_routes(*, request_route_checkpoints(*)), schedule_assignments(*))",
     )
     .order("created_at", { ascending: false });
+  if (process.env.DEMO_MODE !== "false") {
+    query = query.is("created_by", null).eq("email", "demo@orca.sg");
+  }
+  const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   // Reroute history: a view the dashboard derives from request_status_events. Guarded —
