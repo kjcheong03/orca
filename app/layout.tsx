@@ -22,9 +22,9 @@ const appFont = fonts.dmSans;
 
 export const metadata: Metadata = {
   applicationName: "CARA",
-  title: "CARA — Community Health Companion",
+  title: "CARA — Crisis-Aware Response Assistant",
   description:
-    "A caregiver-first companion that turns public health advisories into clear, personalised actions. Frontend prototype.",
+    "Crisis-Aware Response Assistant: a caregiver-first companion that turns public health advisories into clear, personalised actions. Frontend prototype.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [

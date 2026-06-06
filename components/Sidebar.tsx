@@ -30,7 +30,7 @@ export default function Sidebar() {
           <span className="block text-[17px] font-extrabold tracking-tight text-ink">
             CARA
           </span>
-          <span className="block text-[12px] text-muted">Health companion</span>
+          <span className="block text-[12px] leading-snug text-muted">Crisis-Aware Response Assistant</span>
         </span>
       </div>
 

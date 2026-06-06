@@ -4,10 +4,10 @@ import type { MetadataRoute } from "next";
 // this at /manifest.webmanifest and links it automatically.
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "CARA — Community Health Companion",
+    name: "CARA — Crisis-Aware Response Assistant",
     short_name: "CARA",
     description:
-      "A caregiver-first companion that turns public health advisories into clear, personalised actions.",
+      "Crisis-Aware Response Assistant: a caregiver-first companion that turns public health advisories into clear, personalised actions.",
     start_url: "/",
     scope: "/",
     display: "standalone",
