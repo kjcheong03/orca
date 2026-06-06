@@ -6,6 +6,7 @@ import {
   type RequestSession,
   type RequestStatus,
   type RequestTaskSession,
+  type RerouteEvent,
   type SupportTypeId,
 } from "@/lib/contract";
 
@@ -285,9 +286,12 @@ type RouteRow = {
 };
 
 // Human label for each checkpoint stage — mirrors the dashboard's stage→label mapping
-// (the DB stores `stage` + `step_order`, not a label). No `scheduled`/`rescheduled` stages.
+// (the DB stores `stage` + `step_order`, not a label). NOTE: `meal_preparing` is shown
+// as "Added to MOW schedule" (not "Meal preparing"), per the cooked-meals flow.
 const CHECKPOINT_STAGE_LABELS: Record<string, string> = {
   accepted: "Accepted",
+  meal_plan_confirmed: "Meal plan confirmed",
+  meal_preparing: "Added to MOW schedule",
   packing: "Packing",
   ready_for_pickup: "Ready for pickup",
   out_for_delivery: "Out for delivery",
@@ -308,13 +312,59 @@ function latestCheckpoint(rows: CheckpointRow[] | null | undefined): { label: st
   return { label: CHECKPOINT_STAGE_LABELS[latest.stage] ?? latest.stage, at: latest.completed_at };
 }
 
+// Scheduling lives in schedule_assignments (task-linked) — request_tasks.scheduled_for is
+// unused by the dashboard. We surface the most-recently-updated assignment for the task.
+type ScheduleRow = {
+  scheduled_for: string | null;
+  status: string | null;
+  assignee_name: string | null;
+  updated_at: string | null;
+};
+
+function latestAssignment(rows: ScheduleRow[] | null | undefined): ScheduleRow | null {
+  if (!rows || rows.length === 0) return null;
+  return [...rows].sort(
+    (a, b) => new Date(b.updated_at ?? 0).getTime() - new Date(a.updated_at ?? 0).getTime(),
+  )[0];
+}
+
+type RerouteRow = {
+  task_id: string;
+  from_org_id: string;
+  to_org_id: string;
+  reason: string | null;
+  rerouted_at: string;
+};
+
 export async function GET() {
   const sb = supabaseAdmin();
   const { data, error } = await sb
     .from("request_sessions")
-    .select("*, request_tasks(*, request_routes(*, request_route_checkpoints(*)))")
+    .select(
+      "*, request_tasks(*, request_routes(*, request_route_checkpoints(*)), schedule_assignments(*))",
+    )
     .order("created_at", { ascending: false });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Reroute history: a view the dashboard derives from request_status_events. Guarded —
+  // if the view doesn't exist yet, `data` is null and we simply show no reroute banner.
+  const { data: rerouteRows } = await sb
+    .from("request_reroute_history")
+    .select("task_id, from_org_id, to_org_id, reason, rerouted_at");
+  const reroutesByTask = new Map<string, RerouteEvent[]>();
+  for (const rr of (rerouteRows ?? []) as RerouteRow[]) {
+    const list = reroutesByTask.get(rr.task_id) ?? [];
+    list.push({
+      fromOrgId: rr.from_org_id,
+      toOrgId: rr.to_org_id,
+      reason: rr.reason ?? undefined,
+      reroutedAt: rr.rerouted_at,
+    });
+    reroutesByTask.set(rr.task_id, list);
+  }
+  for (const list of reroutesByTask.values()) {
+    list.sort((a, b) => new Date(a.reroutedAt).getTime() - new Date(b.reroutedAt).getTime());
+  }
 
   const sessions: RequestSession[] = (data ?? []).map((s: Record<string, unknown>) => ({
     id: s.id as string,
@@ -353,6 +403,7 @@ export async function GET() {
           displayStatusUpdatedAt: cp?.at,
         };
       });
+      const sa = latestAssignment(t.schedule_assignments as ScheduleRow[] | null);
       return {
         id: (t.task_key as string) ?? (t.support_type as string),
         fulfilment: t.fulfilment as "route" | "partner",
@@ -364,10 +415,12 @@ export async function GET() {
         fulfilmentRoutes: routes.length ? routes : undefined,
         costEstimate: (t.cost_estimate as RequestTaskSession["costEstimate"]) ?? undefined,
         status: (t.status as RequestStatus) ?? "Pending",
-        assignedTo: (t.assigned_to as string) ?? undefined,
+        assignedTo: sa?.assignee_name ?? (t.assigned_to as string) ?? undefined,
         rejectionReason: (t.rejection_reason as string) ?? undefined,
-        scheduledFor: (t.scheduled_for as string) ?? undefined,
+        scheduledFor: sa?.scheduled_for ?? (t.scheduled_for as string) ?? undefined,
+        scheduleStatus: sa?.status ?? undefined,
         partnerNotes: (t.partner_notes as string) ?? undefined,
+        reroutes: reroutesByTask.get(t.id as string),
       };
     }),
   }));

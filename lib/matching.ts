@@ -133,6 +133,8 @@ function taskArea(task: TaskDraft): string {
 }
 
 function servesArea(org: Organisation, area: string): boolean {
+  // "Nationwide" orgs (e.g. AIC Link, TOUCH MOW/Transport, FFTH) cover every SG area.
+  if (org.serviceAreas.includes("Nationwide")) return true;
   return org.serviceAreas.some((a) => a === area || a.startsWith(area));
 }
 

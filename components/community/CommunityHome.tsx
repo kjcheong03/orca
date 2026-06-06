@@ -20,6 +20,7 @@ import {
   routeStatus,
   routeStatusLabel,
   taskStatus,
+  taskStatusLabel,
 } from "@/lib/contract";
 import { loadRequests } from "@/lib/requestStore";
 import RequestDetailModal from "@/components/community/RequestDetailModal";
@@ -62,7 +63,7 @@ function StatusBadge({ status, label }: { status: RequestStatus; label?: string 
  */
 function TaskHeaderBadge({ task }: { task: RequestTaskSession }) {
   if (isRouteBased(task) && task.fulfilmentRoutes?.length) return null; // per-route pills
-  return <StatusBadge status={taskStatus(task)} />; // partner-assigned (no route checkpoints)
+  return <StatusBadge status={taskStatus(task)} label={taskStatusLabel(task)} />; // partner-assigned
 }
 
 function formatWhen(iso: string): string {

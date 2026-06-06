@@ -157,6 +157,18 @@ export interface FulfilmentRoute {
   checkpoints?: FulfilmentCheckpoint[];
 }
 
+/**
+ * A reroute event for a partner-assigned task: the primary partner declined, so the
+ * dashboard auto-promoted the next fallback to primary. Read from the dashboard's
+ * `request_reroute_history` view; surfaced as additive context (a banner), not status.
+ */
+export interface RerouteEvent {
+  fromOrgId: string;
+  toOrgId: string;
+  reason?: string;
+  reroutedAt: string;
+}
+
 // --- request session (what the producer emits on submit) -------------------
 
 export interface RequestTaskSession {
@@ -179,7 +191,14 @@ export interface RequestTaskSession {
   assignedTo?: string;
   rejectionReason?: string;
   scheduledFor?: string;
+  /** Schedule state from the partner's schedule assignment (e.g. "Scheduled", "Rescheduled"). */
+  scheduleStatus?: string;
   partnerNotes?: string;
+  /**
+   * Reroute history (partner-assigned tasks): each time the primary declined and the task
+   * was promoted to a fallback, chronological. Surfaced as a banner; raw status is unaffected.
+   */
+  reroutes?: RerouteEvent[];
 }
 
 export interface RequestSession {
@@ -268,6 +287,20 @@ export function routeStatus(route: FulfilmentRoute): RequestStatus {
 /** Pill text for a route: the checkpoint label if set, else the raw lifecycle. */
 export function routeStatusLabel(route: FulfilmentRoute): string {
   return route.displayStatus?.trim() || routeStatus(route);
+}
+
+/**
+ * Pill text for a task. A partner-assigned task that's been scheduled (raw status still
+ * "In progress" with a scheduled time) reads as "Scheduled" — or "Rescheduled" when the
+ * partner moved the slot. Everything else shows the raw effective status. Colour and
+ * open/closed still come from taskStatus().
+ */
+export function taskStatusLabel(task: RequestTaskSession): string {
+  const status = taskStatus(task);
+  if (isPartnerAssigned(task) && status === "In progress" && task.scheduledFor) {
+    return task.scheduleStatus === "Rescheduled" ? "Rescheduled" : "Scheduled";
+  }
+  return status;
 }
 
 export interface RouteStatusSummary {

@@ -726,7 +726,7 @@ export const organisations: Organisation[] = [
     logo: "/logos/aic.png",
     description:
       "Agency for Integrated Care's referral and navigation channel — helps caregivers find eldercare services, apply for support, and connect to local services.",
-    serviceAreas: ["Ang Mo Kio", "Bishan", "Toa Payoh"],
+    serviceAreas: ["Nationwide"],
     supportTypes: ["referral"],
     supportSubtypes: [
       "Find suitable eldercare service",
@@ -765,7 +765,7 @@ export const organisations: Organisation[] = [
     logo: "/logos/touch.png",
     description:
       "Cooked meal delivery for homebound seniors who cannot buy or prepare meals. Charges advised after assessment; subsidies may apply.",
-    serviceAreas: ["Ang Mo Kio", "Bishan", "Toa Payoh"],
+    serviceAreas: ["Nationwide"],
     supportTypes: ["food"],
     supportSubtypes: ["Cooked meals"],
     capabilities: [
@@ -796,7 +796,7 @@ export const organisations: Organisation[] = [
     logo: "/logos/food-from-the-heart.png",
     description:
       "Food-aid partner providing monthly food packs / rations (non-perishables plus fresh add-ons) for vulnerable seniors, subject to partner assessment.",
-    serviceAreas: ["Ang Mo Kio", "Bishan", "Toa Payoh"],
+    serviceAreas: ["Nationwide"],
     supportTypes: ["food"],
     supportSubtypes: ["Food pack / rations"],
     capabilities: [
@@ -828,7 +828,7 @@ export const organisations: Organisation[] = [
     logo: "/logos/touch.png",
     description:
       "Assisted medical appointment transport with trained escort for frail or wheelchair-using seniors. Charges advised after assessment; subsidies may apply.",
-    serviceAreas: ["Ang Mo Kio", "Bishan", "Toa Payoh"],
+    serviceAreas: ["Nationwide"],
     supportTypes: ["transport"],
     supportSubtypes: ["Medical appointment transport", "Wheelchair-accessible transport"],
     capabilities: [

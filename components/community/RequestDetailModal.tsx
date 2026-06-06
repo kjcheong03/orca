@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useApp } from "@/context/AppContext";
@@ -10,7 +11,14 @@ import {
   type RequestStatus,
   type RequestTaskSession,
 } from "@/lib/community";
-import { detailRows, requestRef, routeStatus, routeStatusLabel, taskStatus } from "@/lib/contract";
+import {
+  detailRows,
+  requestRef,
+  routeStatus,
+  routeStatusLabel,
+  taskStatus,
+  taskStatusLabel,
+} from "@/lib/contract";
 
 const STATUS_CLS: Record<RequestStatus, string> = {
   Pending: "bg-warn/20 text-[#8a5a00]",
@@ -75,9 +83,9 @@ export default function RequestDetailModal({
     .filter(Boolean) as string[];
   const primaryName = getOrganisation(task.primaryOrganisationId)?.name;
 
-  return (
+  const modal = (
     <motion.div
-      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       initial={{ opacity: 0 }}
@@ -86,12 +94,14 @@ export default function RequestDetailModal({
       transition={{ duration: 0.2 }}
     >
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/40" />
+      {/* Fixed-height card: header pinned, body scrolls inside. Capped at 85dvh with a
+          margin (p-4 above) so it's always fully on-screen. */}
       <motion.div
-        className="relative flex max-h-[86dvh] w-full max-w-md flex-col rounded-t-[28px] bg-app sm:rounded-[28px]"
-        initial={{ y: "100%" }}
-        animate={{ y: 0 }}
-        exit={{ y: "100%" }}
-        transition={{ type: "tween", duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        className="relative w-full max-w-md overflow-hidden rounded-[28px] bg-app shadow-[0_8px_40px_rgba(30,50,90,0.18)]"
+        initial={{ opacity: 0, scale: 0.97 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.97 }}
+        transition={{ type: "tween", duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
       >
         {/* Header status: partner-assigned and supplies (distribution) both show their
             task-level status; food shows none (its per-route lifecycle pills carry it). */}
@@ -107,14 +117,34 @@ export default function RequestDetailModal({
           <div className="flex items-center gap-2">
             {/* Route-based tasks (food + supplies) carry state on per-route pills below;
                 only partner-assigned tasks get a single header status (raw lifecycle). */}
-            {routes.length === 0 && <StatusPill status={taskStatus(task)} />}
+            {routes.length === 0 && <StatusPill status={taskStatus(task)} label={taskStatusLabel(task)} />}
             <button type="button" onClick={onClose} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full bg-card shadow-sm">
               <X size={18} className="text-ink" />
             </button>
           </div>
         </div>
 
-        <div className="no-scrollbar space-y-4 overflow-y-auto px-5 pb-8">
+        <div className="no-scrollbar max-h-[70dvh] space-y-4 overflow-y-auto px-5 pb-8 pt-2">
+          {/* Re-routed — the primary partner declined, so the task moved to a fallback.
+              Additive context only; raw status drives colour/open-closed. */}
+          {task.reroutes && task.reroutes.length > 0 && (
+            <div className="rounded-[18px] bg-danger-soft p-4 ring-1 ring-danger/20">
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[#b42318]">
+                {tx("Re-routed")}
+              </p>
+              <div className="mt-1 space-y-1">
+                {task.reroutes.map((rr, i) => (
+                  <p key={i} className="text-[13px] leading-relaxed text-ink">
+                    {txf("{from} couldn't take this{reason}.", {
+                      from: getOrganisation(rr.fromOrgId)?.name ?? rr.fromOrgId,
+                      reason: rr.reason ? `: ${rr.reason}` : "",
+                    })}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Partner-set updates — rejection reason, scheduled time, and notes, shown
               to the caregiver when present (set on the dashboard side). */}
           {task.rejectionReason && (
@@ -126,7 +156,7 @@ export default function RequestDetailModal({
             </div>
           )}
           {task.scheduledFor && (
-            <div className="rounded-[18px] bg-brand-soft p-4">
+            <div className="rounded-[18px] bg-brand-soft p-4 ring-1 ring-brand/20">
               <p className="text-[12px] font-bold uppercase tracking-wide text-brand-dark">
                 {tx("Scheduled for")}
               </p>
@@ -259,4 +289,8 @@ export default function RequestDetailModal({
       </motion.div>
     </motion.div>
   );
+
+  // Portal to <body> so the fixed overlay is always viewport-relative (immune to any
+  // ancestor that establishes a containing block / clips it) and never cut off.
+  return typeof document === "undefined" ? modal : createPortal(modal, document.body);
 }
