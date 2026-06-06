@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, Megaphone, X } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { broadcasts } from "@/lib/data";
 
 export default function BroadcastSheet() {
-  const { broadcastOpen, closeBroadcast, t, tx } = useApp();
+  const { broadcastOpen, closeBroadcast, t, tx, broadcasts, lang } = useApp();
   const closeRef = useRef<HTMLButtonElement>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -53,8 +52,18 @@ export default function BroadcastSheet() {
         </div>
 
         <div className="no-scrollbar space-y-3 overflow-y-auto px-5 pb-8">
+          {broadcasts.length === 0 && (
+            <div className="rounded-[20px] bg-card px-5 py-10 text-center shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
+              <p className="text-[15px] font-semibold text-ink">{tx("No active advisories")}</p>
+              <p className="mt-1.5 text-[13px] text-muted">
+                {tx("Official advisories will appear here when issued.")}
+              </p>
+            </div>
+          )}
           {broadcasts.map((b) => {
             const open = expanded === b.id;
+            // Show the caregiver's app-language version when available; else English.
+            const content = lang !== "en" && b.translations?.[lang] ? b.translations[lang] : { title: b.title, body: b.body };
             return (
               <article
                 key={b.id}
@@ -71,7 +80,14 @@ export default function BroadcastSheet() {
                     <Megaphone size={18} className="text-white" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="display block text-[16px] text-ink">{tx(b.title)}</span>
+                    <span className="flex items-center gap-2">
+                      <span className="display text-[16px] text-ink">{tx(content.title)}</span>
+                      {b.urgency === "HIGH" && (
+                        <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-700">
+                          {tx("Urgent")}
+                        </span>
+                      )}
+                    </span>
                     <span className="mt-0.5 block text-[12px] text-faint">
                       {b.source} · {b.time}
                     </span>
@@ -92,9 +108,9 @@ export default function BroadcastSheet() {
                       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                       className="overflow-hidden border-t border-black/5"
                     >
-                      <p className="px-5 pb-5 pt-4 text-[14px] leading-relaxed text-body">
-                        {tx(b.body)}
-                      </p>
+                      <div className="px-5 pb-5 pt-4">
+                        {renderBroadcastBody(content.body, tx)}
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -105,4 +121,63 @@ export default function BroadcastSheet() {
       </div>
     </div>
   );
+}
+
+/** Render inline markdown within a line: [label](url) links and **bold**. */
+function renderInline(text: string, keyBase: string): ReactNode[] {
+  const out: ReactNode[] = [];
+  const re = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  let k = 0;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) out.push(text.slice(last, m.index));
+    if (m[1] !== undefined) {
+      out.push(
+        <a
+          key={`${keyBase}-${k++}`}
+          href={m[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-brand underline underline-offset-2"
+        >
+          {m[1]}
+        </a>,
+      );
+    } else {
+      out.push(
+        <strong key={`${keyBase}-${k++}`} className="font-semibold text-ink">
+          {m[3]}
+        </strong>,
+      );
+    }
+    last = re.lastIndex;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
+
+/** Render an authority advisory body (markdown: **section headers**, paragraphs,
+ *  [links](url)) with bold headers, spacing, and clickable links. */
+function renderBroadcastBody(body: string, tx: (s: string) => string): ReactNode[] {
+  const blocks: ReactNode[] = [];
+  body.split("\n").forEach((raw, i) => {
+    const line = raw.trim();
+    if (!line) return;
+    const header = line.match(/^\*\*(.+?)\*\*$/);
+    if (header) {
+      blocks.push(
+        <p key={i} className="mt-4 text-[12.5px] font-bold uppercase tracking-wide text-ink first:mt-0">
+          {tx(header[1])}
+        </p>,
+      );
+      return;
+    }
+    blocks.push(
+      <p key={i} className="mt-1 text-[14px] leading-relaxed text-body">
+        {renderInline(tx(line), String(i))}
+      </p>,
+    );
+  });
+  return blocks;
 }

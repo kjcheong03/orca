@@ -4,12 +4,15 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
 import { translate } from "@/lib/i18n";
 import { tx as txAuto, txf as txfAuto } from "@/lib/i18n/auto";
-import type { Language } from "@/lib/types";
+import { broadcasts as seedBroadcasts } from "@/lib/data";
+import { loadBroadcasts } from "@/lib/broadcasts";
+import type { Broadcast, Language } from "@/lib/types";
 
 export type Tab = "info" | "support" | "contacts" | "profile";
 
@@ -33,15 +36,45 @@ interface AppState {
   broadcastOpen: boolean;
   openBroadcast: () => void;
   closeBroadcast: () => void;
+
+  /** Broadcasts shown in the banner + sheet. Live authority broadcasts when
+   *  available, otherwise the bundled seed copy. Newest first. */
+  broadcasts: Broadcast[];
+  /** The headline broadcast for the top banner (the latest one). */
+  bannerBroadcast: { title: string; preview: string };
 }
 
 const AppContext = createContext<AppState | null>(null);
+
+/** One-line preview of a broadcast body for the banner. */
+function previewOf(body: string): string {
+  const clean = body.replace(/\s+/g, " ").trim();
+  return clean.length > 90 ? `${clean.slice(0, 89).trimEnd()}…` : clean;
+}
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [tab, setTab] = useState<Tab>("info");
   const [lang, setLang] = useState<Language>("en");
   const [langPickerOpen, setLangPickerOpen] = useState(false);
   const [broadcastOpen, setBroadcastOpen] = useState(false);
+  // Live authority broadcasts. A genuine empty result ([]) is shown as an empty
+  // state (no stale mock). The bundled seed copy is used ONLY when the fetch
+  // FAILS, so a transient outage never blanks the banner.
+  const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    loadBroadcasts()
+      .then((fetched) => {
+        if (active) setBroadcasts(fetched);
+      })
+      .catch(() => {
+        if (active) setBroadcasts(seedBroadcasts);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const t = useCallback((key: string) => translate(lang, key), [lang]);
   const tx = useCallback((s: string) => txAuto(lang, s), [lang]);
@@ -50,8 +83,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [lang],
   );
 
-  const value = useMemo<AppState>(
-    () => ({
+  const value = useMemo<AppState>(() => {
+    const top = broadcasts[0];
+    const topContent = top
+      ? (lang !== "en" && top.translations?.[lang] ? top.translations[lang] : { title: top.title, body: top.body })
+      : null;
+    const bannerBroadcast = topContent
+      ? { title: topContent.title, preview: previewOf(topContent.body) }
+      : { title: "", preview: "" };
+    return {
       tab,
       setTab,
       lang,
@@ -65,9 +105,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       broadcastOpen,
       openBroadcast: () => setBroadcastOpen(true),
       closeBroadcast: () => setBroadcastOpen(false),
-    }),
-    [tab, lang, t, tx, txf, langPickerOpen, broadcastOpen],
-  );
+      broadcasts,
+      bannerBroadcast,
+    };
+  }, [tab, lang, t, tx, txf, langPickerOpen, broadcastOpen, broadcasts]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

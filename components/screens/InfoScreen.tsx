@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
-import { Check, MapPin, Minus, TrendingDown, TrendingUp, X } from "lucide-react";
+import { Check, MapPin, Minus, RefreshCw, TrendingDown, TrendingUp, X } from "lucide-react";
 import AdvisoryCarousel from "@/components/AdvisoryCarousel";
 import AskCaraChat from "@/components/AskCaraChat";
 import CalendarFab from "@/components/CalendarFab";
@@ -62,9 +62,49 @@ function localizedConditions(tx: (s: string) => string): string {
 const cardCls = "rounded-[22px] bg-card p-5 shadow-[0_2px_14px_rgba(30,50,90,0.06)]";
 const shortName = patient.name.split(" ").slice(0, 2).join(" ");
 
-function SuggestionsCard({ suggestions, why }: { suggestions: Suggestion[]; why: string }) {
-  const { tx, txf } = useApp();
+type LangSuggestions = { suggestions: Suggestion[]; why: string };
+// Cache AI suggestions per situation so re-renders / revisits don't regenerate;
+// the reload button forces a fresh set.
+const suggestionCache = new Map<string, Record<string, LangSuggestions>>();
+
+function SuggestionsCard({ hazard, date, fallback }: { hazard: Hazard; date: string; fallback: LangSuggestions }) {
+  const { tx, txf, lang } = useApp();
   const [whyOpen, setWhyOpen] = useState(false);
+  const key = `${hazard}:${hazard === "covid" ? date : "live"}`;
+  const [data, setData] = useState<Record<string, LangSuggestions> | null>(() => suggestionCache.get(key) ?? null);
+  const [loading, setLoading] = useState(false);
+
+  const load = useCallback(async (force: boolean) => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hazard, date, force }),
+      });
+      if (res.ok) {
+        const json = (await res.json()) as Record<string, LangSuggestions>;
+        if (json && Object.keys(json).length) {
+          suggestionCache.set(key, json);
+          setData(json);
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [hazard, date, key]);
+
+  // Generate (or reuse cached) AI suggestions when the situation changes.
+  useEffect(() => {
+    const cached = suggestionCache.get(key);
+    if (cached) {
+      setData(cached);
+      return;
+    }
+    setData(null);
+    void load(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
 
   useEffect(() => {
     if (!whyOpen) return;
@@ -75,26 +115,43 @@ function SuggestionsCard({ suggestions, why }: { suggestions: Suggestion[]; why:
     return () => document.removeEventListener("keydown", onKey);
   }, [whyOpen]);
 
+  // AI content for the active language (English fallback); mock copy until loaded.
+  const ai = data ? data[lang] ?? data.en ?? null : null;
+  const suggestions = ai ? ai.suggestions : fallback.suggestions;
+  const why = ai ? ai.why : fallback.why;
+
   return (
     <div className={cardCls}>
       <div className="flex items-start justify-between gap-3">
         <p className="text-[12px] font-bold uppercase tracking-wider text-faint">
           {txf("For {name} today", { name: shortName })}
         </p>
-        <button
-          type="button"
-          onClick={() => setWhyOpen(true)}
-          className="shrink-0 text-[13px] font-semibold text-brand hover:underline"
-        >
-          {tx("Why?")}
-        </button>
+        <div className="flex shrink-0 items-center gap-3">
+          <button
+            type="button"
+            onClick={() => load(true)}
+            disabled={loading}
+            aria-label={tx("Refresh suggestions")}
+            title={tx("Refresh suggestions")}
+            className="text-faint transition-colors hover:text-brand disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} aria-hidden />
+          </button>
+          <button
+            type="button"
+            onClick={() => setWhyOpen(true)}
+            className="text-[13px] font-semibold text-brand hover:underline"
+          >
+            {tx("Why?")}
+          </button>
+        </div>
       </div>
 
       <ul className="mt-3 space-y-3.5">
         {suggestions.map((s) => (
           <li key={s.text} className="flex gap-3">
             <Check className="mt-0.5 shrink-0 text-check" size={20} strokeWidth={3} aria-hidden />
-            <span className="text-[14px] leading-snug text-body">{tx(s.text)}</span>
+            <span className="text-[14px] leading-snug text-body">{ai ? s.text : tx(s.text)}</span>
           </li>
         ))}
       </ul>
@@ -125,12 +182,6 @@ function SuggestionsCard({ suggestions, why }: { suggestions: Suggestion[]; why:
               {tx("Why these suggestions?")}
             </h2>
             <p className="mt-3 text-[14.5px] leading-relaxed text-body">{why}</p>
-            <p className="mt-3 text-[12.5px] leading-relaxed text-faint">
-              {txf(
-                "CARA tailors these to {name}'s age and conditions. Detailed reasoning is a work in progress.",
-                { name: shortName },
-              )}
-            </p>
           </div>
         </div>
       )}
@@ -326,7 +377,7 @@ function CovidCards({ date }: { date: string }) {
         <p className="mt-1 text-[13px] text-muted">{elderlyStat}</p>
       </div>
 
-      <SuggestionsCard suggestions={s.suggestions} why={why} />
+      <SuggestionsCard hazard="covid" date={date} fallback={{ suggestions: s.suggestions, why }} />
     </>
   );
 }
@@ -379,7 +430,7 @@ function DengueCards() {
         </p>
       </div>
 
-      <SuggestionsCard suggestions={d.suggestions} why={why} />
+      <SuggestionsCard hazard="dengue" date="" fallback={{ suggestions: d.suggestions, why }} />
     </>
   );
 }

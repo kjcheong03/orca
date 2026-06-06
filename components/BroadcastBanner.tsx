@@ -2,10 +2,9 @@
 
 import { ChevronRight, Megaphone } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { bannerBroadcast } from "@/lib/data";
 
 export default function BroadcastBanner() {
-  const { openBroadcast, tx } = useApp();
+  const { openBroadcast, tx, bannerBroadcast } = useApp();
   return (
     <button
       type="button"

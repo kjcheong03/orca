@@ -4,14 +4,19 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight, Megaphone } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { broadcasts } from "@/lib/data";
 
 // How long each advisory stays on screen before sliding to the next.
 const SLIDE_MS = 4200;
 
-/** First sentence of the body, as a one-line preview. */
+/** First sentence of the body, as a one-line preview (markdown stripped). */
 function previewOf(body: string): string {
-  const first = body.split(". ")[0].trim();
+  const plain = body
+    .replace(/^\s*\*\*[^*]+\*\*\s*/, "")        // drop the leading **Section** header
+    .replace(/\*\*([^*]+)\*\*/g, "$1")          // bold → text
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")     // [text](url) → text
+    .replace(/\s+/g, " ")
+    .trim();
+  const first = plain.split(". ")[0].trim();
   return first.endsWith(".") ? first : `${first}.`;
 }
 
@@ -22,7 +27,7 @@ function previewOf(body: string): string {
  * broadcast sheet. Styled to match the original broadcast banner.
  */
 export default function AdvisoryCarousel() {
-  const { openBroadcast, tx } = useApp();
+  const { openBroadcast, tx, broadcasts, lang } = useApp();
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const count = broadcasts.length;
@@ -33,7 +38,30 @@ export default function AdvisoryCarousel() {
     return () => clearInterval(id);
   }, [paused, count]);
 
-  const current = broadcasts[index];
+  // No active advisories (the DB returned none) — show a calm empty state
+  // rather than disappearing or showing stale mock content.
+  if (!count) {
+    return (
+      <div className="flex h-[60px] w-full items-center gap-3 rounded-[16px] bg-card px-3 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200">
+          <Megaphone size={18} className="text-slate-400" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[15px] font-semibold text-muted">
+            {tx("No active advisories")}
+          </span>
+          <span className="block truncate text-[13px] text-faint">
+            {tx("Official advisories will appear here when issued.")}
+          </span>
+        </span>
+      </div>
+    );
+  }
+
+  // `broadcasts` can shrink across refetches; clamp the index defensively.
+  const current = broadcasts[index % count];
+  // Show the caregiver's app-language version when available; else English.
+  const content = lang !== "en" && current.translations?.[lang] ? current.translations[lang] : current;
 
   return (
     <button
@@ -58,10 +86,10 @@ export default function AdvisoryCarousel() {
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[15px] font-bold text-ink">
-              {tx(current.title)}
+              {tx(content.title)}
             </span>
             <span className="block truncate text-[13px] text-muted">
-              {previewOf(tx(current.body))}
+              {previewOf(content.body)}
             </span>
           </span>
         </motion.div>

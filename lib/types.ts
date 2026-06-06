@@ -60,6 +60,11 @@ export interface Broadcast {
   body: string;
   source: string;
   time: string;
+  /** Authority urgency, when sourced from a real broadcast. */
+  urgency?: "HIGH" | "NORMAL";
+  /** Per-language versions keyed by CARA language code (zh, ms, id, tl, my).
+   *  English is the base (title/body); other languages come from the authority. */
+  translations?: Record<string, { title: string; body: string }>;
 }
 
 export interface Contact {

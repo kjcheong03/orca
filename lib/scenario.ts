@@ -23,7 +23,7 @@ export const dateBounds = {
   max: covidWeekly[covidWeekly.length - 1].date, // 2024-02-19
 };
 
-export const defaultDate = "2023-11-13";
+export const defaultDate = "2023-11-20";
 export const defaultHazard: Hazard = "covid";
 
 const HAZARD = {
