@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { Car, Compass, HandHeart, HeartHandshake, Package, UtensilsCrossed } from "lucide-react";
+import { Car, ChevronLeft, ChevronRight, Compass, HandHeart, HeartHandshake, Package, UtensilsCrossed } from "lucide-react";
 import Mascot from "@/components/Mascot";
 import { useApp } from "@/context/AppContext";
 import {
@@ -95,6 +95,7 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
   const [open, setOpen] = useState<{ session: RequestSession; task: RequestTaskSession } | null>(null);
 
   const [tab, setTab] = useState<"open" | "closed">("open");
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -131,8 +132,15 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
   const closedCards = cards.filter(({ t }) => isTerminalStatus(taskStatus(t)));
   const shown = tab === "open" ? openCards : closedCards;
 
+  // Paginate the active tab — up to PAGE_SIZE per page, with controls only when
+  // there's more than one page. `safePage` clamps in case the list shrank under us.
+  const PAGE_SIZE = 6;
+  const totalPages = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const paged = shown.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
+
   return (
-    <div className="mx-auto flex h-[calc(100dvh-5rem-env(safe-area-inset-bottom))] w-full max-w-xl flex-col gap-5 px-4 pt-5 lg:h-[calc(100dvh-3.5rem)] lg:pt-8">
+    <div className="mx-auto flex min-h-[calc(100dvh-5rem-env(safe-area-inset-bottom))] w-full max-w-xl flex-col gap-5 px-4 pt-5 lg:min-h-[calc(100dvh-3.5rem)] lg:pt-8">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-3">
         <span className="-my-2 shrink-0">
@@ -177,7 +185,7 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
 
       {/* Your requests — one encompassing card; the list scrolls inside it. The card
           flex-fills the remaining height and stops just above the nav (gap below). */}
-      <div className="flex min-h-0 flex-1 flex-col rounded-[22px] bg-card p-4 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
+      <div className="flex min-h-[460px] flex-col rounded-[22px] bg-card p-4 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
         {/* Title + small B&W Open/Closed toggle on the same row */}
         <div className="flex shrink-0 items-center justify-between gap-2 px-1">
           <p className="text-[12px] font-bold uppercase tracking-wider text-faint">{tx("Your requests")}</p>
@@ -187,7 +195,10 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
               fluid={false}
               bare
               value={tab}
-              onChange={setTab}
+              onChange={(v) => {
+                setTab(v);
+                setPage(0);
+              }}
               options={[
                 { value: "open", label: tx("Open") },
                 { value: "closed", label: tx("Closed") },
@@ -228,8 +239,9 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
             </p>
           </div>
         ) : (
-          <div className="fade-enter no-scrollbar mt-2.5 min-h-0 flex-1 space-y-2.5 overflow-y-auto px-1 py-1">
-                {shown.map(({ req, t }) => (
+          <div className="mt-2.5 flex min-h-0 flex-1 flex-col">
+            <div className="fade-enter flex-1 space-y-2.5 px-1 py-1">
+                {paged.map(({ req, t }) => (
                   <button
                     key={`${req.id}-${t.id}`}
                     type="button"
@@ -260,6 +272,34 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
                     </div>
                   </button>
                 ))}
+            </div>
+
+            {/* Pager — only shown when the active tab spills past one page. */}
+            {totalPages > 1 && (
+              <div className="mt-2 flex shrink-0 items-center justify-between px-1">
+                <button
+                  type="button"
+                  disabled={safePage === 0}
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  className="grid h-9 w-9 place-items-center rounded-full ring-1 ring-black/10 text-ink transition-transform active:scale-95 disabled:opacity-35"
+                  aria-label={tx("Previous page")}
+                >
+                  <ChevronLeft size={18} strokeWidth={2.4} />
+                </button>
+                <span className="text-[12.5px] font-semibold text-muted">
+                  {tx("Page")} {safePage + 1} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={safePage >= totalPages - 1}
+                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                  className="grid h-9 w-9 place-items-center rounded-full ring-1 ring-black/10 text-ink transition-transform active:scale-95 disabled:opacity-35"
+                  aria-label={tx("Next page")}
+                >
+                  <ChevronRight size={18} strokeWidth={2.4} />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

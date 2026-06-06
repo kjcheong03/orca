@@ -12,7 +12,7 @@ export const languageNames: Record<Language, string> = {
   ms: "Bahasa Melayu",
 };
 
-/** Two-letter code shown on the centre nav button. */
+/** Two-letter code shown on the nav language button. */
 export const languageCodes: Record<Language, string> = {
   en: "EN",
   id: "ID",

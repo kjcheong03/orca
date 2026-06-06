@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Check, ChevronDown, FileText, HeartPulse, LogOut, MapPin, Pencil, Pill, Plus, Trash2, User, X } from "lucide-react";
 import AddressFields from "@/components/AddressFields";
 import { useApp } from "@/context/AppContext";
+import { languageNames } from "@/lib/i18n";
 import {
   blankMedicine,
   blankProfile,
@@ -101,7 +102,7 @@ function IconButton({
 }
 
 export default function ProfileScreen() {
-  const { t, tx } = useApp();
+  const { t, tx, lang, openLangPicker } = useApp();
   const [profiles, setProfiles] = useState<ElderProfile[]>(defaultProfiles);
   const [activeId, setActiveId] = useState("p-default");
   const [editing, setEditing] = useState(false);
@@ -189,9 +190,51 @@ export default function ProfileScreen() {
   return (
     <div className="px-4 pb-8 pt-4 lg:pt-8">
       <div className="mx-auto w-full max-w-2xl">
-        {/* Toolbar: profile switcher (+ add) on the left, actions on the right */}
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="no-scrollbar -my-1 flex items-center gap-2 overflow-x-auto py-1">
+        {/* Toolbar — utility actions (incl. language) on the top row; the profile
+            switcher (+ add) sits on its own row just below. */}
+        <div className="mb-3">
+          <div className="flex items-center justify-between gap-2">
+            {/* Language switcher — left-aligned white dropdown showing the name. */}
+            <button
+              type="button"
+              onClick={openLangPicker}
+              aria-label={tx("Change language")}
+              title={tx("Change language")}
+              className="flex h-9 shrink-0 items-center gap-2 rounded-xl bg-white px-3 text-[13px] font-semibold text-ink shadow-sm ring-1 ring-black/10 transition-colors hover:border-brand"
+            >
+              {languageNames[lang]}
+              <ChevronDown size={16} className="text-faint" />
+            </button>
+
+            <div className="flex items-center gap-2">
+            {editing ? (
+              <>
+                {canDelete && (
+                  <IconButton label={tx("Delete profile")} onClick={deleteProfile} tone="danger">
+                    <Trash2 size={17} />
+                  </IconButton>
+                )}
+                <IconButton label={tx("Cancel")} onClick={cancel}>
+                  <X size={18} />
+                </IconButton>
+                <IconButton label={tx("Save")} onClick={save} tone="brand">
+                  <Check size={18} strokeWidth={2.6} />
+                </IconButton>
+              </>
+            ) : (
+              <>
+                <IconButton label={tx("Your profile")} onClick={() => setCaregiverOpen(true)}>
+                  <User size={16} />
+                </IconButton>
+                <IconButton label={tx("Log out")} onClick={() => { /* prototype: no auth yet */ }}>
+                  <LogOut size={16} />
+                </IconButton>
+              </>
+            )}
+            </div>
+          </div>
+
+          <div className="no-scrollbar -my-1 mt-3 flex items-center gap-2 overflow-x-auto py-1">
             {profiles.map((p, i) => {
               const on = p.id === activeId;
               return (
@@ -220,33 +263,6 @@ export default function ProfileScreen() {
             >
               <Plus size={16} strokeWidth={2.5} />
             </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {editing ? (
-              <>
-                {canDelete && (
-                  <IconButton label={tx("Delete profile")} onClick={deleteProfile} tone="danger">
-                    <Trash2 size={17} />
-                  </IconButton>
-                )}
-                <IconButton label={tx("Cancel")} onClick={cancel}>
-                  <X size={18} />
-                </IconButton>
-                <IconButton label={tx("Save")} onClick={save} tone="brand">
-                  <Check size={18} strokeWidth={2.6} />
-                </IconButton>
-              </>
-            ) : (
-              <>
-                <IconButton label={tx("Your profile")} onClick={() => setCaregiverOpen(true)}>
-                  <User size={16} />
-                </IconButton>
-                <IconButton label={tx("Log out")} onClick={() => { /* prototype: no auth yet */ }}>
-                  <LogOut size={16} />
-                </IconButton>
-              </>
-            )}
           </div>
         </div>
 
