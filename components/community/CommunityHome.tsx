@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { Car, ChevronLeft, ChevronRight, Compass, HandHeart, HeartHandshake, Package, UtensilsCrossed } from "lucide-react";
+import { Car, ChevronLeft, ChevronRight, Compass, HandHeart, HeartHandshake, Package, RefreshCw, UtensilsCrossed } from "lucide-react";
 import Mascot from "@/components/Mascot";
 import { useApp } from "@/context/AppContext";
 import {
@@ -13,7 +13,14 @@ import {
   type RequestTaskSession,
   type SupportTypeId,
 } from "@/lib/community";
-import { isRouteBased, isTerminalStatus, requestRef, taskStatus } from "@/lib/contract";
+import {
+  isRouteBased,
+  isTerminalStatus,
+  requestRef,
+  routeStatus,
+  routeStatusLabel,
+  taskStatus,
+} from "@/lib/contract";
 import { loadRequests } from "@/lib/requestStore";
 import RequestDetailModal from "@/components/community/RequestDetailModal";
 import SegmentedToggle from "@/components/ui/SegmentedToggle";
@@ -35,15 +42,16 @@ const STATUS_CLS: Record<RequestStatus, string> = {
   Cancelled: "bg-black/[0.06] text-faint",
 };
 
-function StatusBadge({ status }: { status: RequestStatus }) {
+function StatusBadge({ status, label }: { status: RequestStatus; label?: string }) {
   const { tx } = useApp();
+  // `status` (raw lifecycle) sets the colour; `label` (optional checkpoint) sets the text.
   return (
     <span
       className={`shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-semibold ${
         STATUS_CLS[status] ?? STATUS_CLS.Pending
       }`}
     >
-      {tx(status)}
+      {tx(label ?? status)}
     </span>
   );
 }
@@ -54,7 +62,7 @@ function StatusBadge({ status }: { status: RequestStatus }) {
  */
 function TaskHeaderBadge({ task }: { task: RequestTaskSession }) {
   if (isRouteBased(task) && task.fulfilmentRoutes?.length) return null; // per-route pills
-  return <StatusBadge status={taskStatus(task)} />; // partner-assigned
+  return <StatusBadge status={taskStatus(task)} />; // partner-assigned (no route checkpoints)
 }
 
 function formatWhen(iso: string): string {
@@ -99,6 +107,7 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Load the request log from Supabase (via the server route) after mount. `loading`
   // drives the ghost-card skeleton — we keep showing it for the whole load (however long)
@@ -123,6 +132,17 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
       active = false;
     };
   }, [reloadKey]);
+
+  // In-place refresh: re-fetch without the full skeleton (the list stays, the icon spins).
+  // A transient failure keeps the current list rather than blanking it to an error.
+  const refresh = () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    loadRequests()
+      .then((r) => setRequests(r))
+      .catch(() => {})
+      .finally(() => setRefreshing(false));
+  };
 
   // Flatten to per-task cards (newest sessions first from the API), then split by
   // lifecycle so open requests are easy to find. A card is "closed" once its effective
@@ -194,20 +214,32 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
         {/* Control row — Open/Closed on the left; compact pager on the right (>1 page) */}
         {!loading && !error && requests.length > 0 && (
           <div className="flex shrink-0 items-center justify-between gap-2 px-1">
-            <SegmentedToggle<"open" | "closed">
-              size="sm"
-              fluid={false}
-              bare
-              value={tab}
-              onChange={(v) => {
-                setTab(v);
-                setPage(0);
-              }}
-              options={[
-                { value: "open", label: tx("Open") },
-                { value: "closed", label: tx("Closed") },
-              ]}
-            />
+            <div className="flex items-center gap-1">
+              <SegmentedToggle<"open" | "closed">
+                size="sm"
+                fluid={false}
+                bare
+                value={tab}
+                onChange={(v) => {
+                  setTab(v);
+                  setPage(0);
+                }}
+                options={[
+                  { value: "open", label: tx("Open") },
+                  { value: "closed", label: tx("Closed") },
+                ]}
+              />
+              <button
+                type="button"
+                onClick={refresh}
+                disabled={refreshing}
+                aria-label={tx("Refresh")}
+                title={tx("Refresh")}
+                className="grid h-8 w-8 place-items-center rounded-full text-faint transition-colors hover:text-ink disabled:opacity-50"
+              >
+                <RefreshCw size={15} className={refreshing ? "animate-spin" : ""} />
+              </button>
+            </div>
             {totalPages > 1 && (
               <div className="flex items-center gap-0.5">
                 <button
@@ -287,7 +319,7 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
                             <span className="min-w-0 truncate text-[12.5px] text-muted">
                               <span className="font-medium text-ink">{tx(r.label)}</span> → {r.routeName}
                             </span>
-                            <StatusBadge status={r.lifecycle ?? "Pending"} />
+                            <StatusBadge status={routeStatus(r)} label={routeStatusLabel(r)} />
                           </div>
                         ))}
                       </div>

@@ -114,6 +114,15 @@ export type SupplyAvailabilityMode =
   | "partner_assessment"
   | "unavailable";
 
+/** One operational checkpoint in a route's fulfilment timeline (dashboard/operator-set). */
+export interface FulfilmentCheckpoint {
+  stage: string;
+  label: string;
+  completedAt: string;
+  actorName?: string;
+  notes?: string;
+}
+
 /** A per-item (supplies) / per-subtype (food) fulfilment route. */
 export interface FulfilmentRoute {
   label: string;
@@ -133,6 +142,19 @@ export interface FulfilmentRoute {
   status: string;
   /** Workflow state — dashboard-set, meaningful ONLY for `partner_service` routes (food). */
   lifecycle?: RequestStatus;
+  /**
+   * Operational-checkpoint label set by the dashboard (e.g. "Packing", "Ready for pickup",
+   * "Out for delivery"). Used for the pill TEXT only; the raw `lifecycle` still drives
+   * colour + open/closed. Falls back to `lifecycle` when absent.
+   */
+  displayStatus?: string;
+  /** When `displayStatus` was last set (ISO) — shown as "last updated" in the detail view. */
+  displayStatusUpdatedAt?: string;
+  /**
+   * Full operational checkpoint history (operator timeline). Typed for contract parity but
+   * NOT rendered on the caregiver side — caregivers see only displayStatus + its updated time.
+   */
+  checkpoints?: FulfilmentCheckpoint[];
 }
 
 // --- request session (what the producer emits on submit) -------------------
@@ -226,6 +248,94 @@ export function requestRef(sessionId: string): string {
   const n = Number(raw);
   const code = Number.isFinite(n) && raw !== "" ? n.toString(36).toUpperCase() : raw.toUpperCase();
   return `REQ-${code}`;
+}
+
+// --- status summaries (shared display shape for caregiver + dashboard) ------
+// Pre-flattened status objects so both apps render the same thing without each
+// re-deriving status / terminal / per-route state.
+
+/** A single route's current lifecycle (distribution + partner_service alike). */
+export function routeStatus(route: FulfilmentRoute): RequestStatus {
+  return route.lifecycle ?? "Pending";
+}
+
+// --- pill TEXT (display) vs lifecycle (colour + open/closed) ----------------
+// The pill TEXT may prefer a richer operational-checkpoint label when the dashboard
+// supplies one; the raw RequestStatus from routeStatus()/taskStatus() still decides
+// the pill colour and the open/closed split. These return strings (a checkpoint label
+// isn't always one of the RequestStatus values).
+
+/** Pill text for a route: the checkpoint label if set, else the raw lifecycle. */
+export function routeStatusLabel(route: FulfilmentRoute): string {
+  return route.displayStatus?.trim() || routeStatus(route);
+}
+
+export interface RouteStatusSummary {
+  label: string;
+  routeName: string;
+  workspaceId?: string;
+  routeType: FulfilmentRoute["routeType"];
+  status: RequestStatus;
+  isTerminal: boolean;
+}
+
+export interface TaskStatusSummary {
+  id: string;
+  supportType: SupportTypeId;
+  selectedSubtypes: string[];
+  /** Effective status (route rollup for route-based tasks, else the task's own). */
+  status: RequestStatus;
+  /** The task's own stored status, before route rollup. */
+  rawStatus: RequestStatus;
+  isTerminal: boolean;
+  rejectionReason?: string;
+  scheduledFor?: string;
+  partnerNotes?: string;
+  routes: RouteStatusSummary[];
+}
+
+export interface RequestStatusSummary {
+  requestRef: string;
+  sessionId: string;
+  overallStatus: RequestStatus;
+  isTerminal: boolean;
+  tasks: TaskStatusSummary[];
+}
+
+export function taskStatusSummary(task: RequestTaskSession): TaskStatusSummary {
+  const status = taskStatus(task);
+  return {
+    id: task.id,
+    supportType: task.supportType,
+    selectedSubtypes: task.selectedSubtypes,
+    status,
+    rawStatus: task.status,
+    isTerminal: isTerminalStatus(status),
+    rejectionReason: task.rejectionReason,
+    scheduledFor: task.scheduledFor,
+    partnerNotes: task.partnerNotes,
+    routes: (task.fulfilmentRoutes ?? []).map((route) => {
+      const s = routeStatus(route);
+      return {
+        label: route.label,
+        routeName: route.routeName,
+        workspaceId: route.workspaceId,
+        routeType: route.routeType,
+        status: s,
+        isTerminal: isTerminalStatus(s),
+      };
+    }),
+  };
+}
+
+export function requestStatusSummary(session: RequestSession): RequestStatusSummary {
+  return {
+    requestRef: requestRef(session.id),
+    sessionId: session.id,
+    overallStatus: session.overallStatus,
+    isTerminal: isTerminalStatus(session.overallStatus),
+    tasks: session.tasks.map(taskStatusSummary),
+  };
 }
 
 // --- work items (the dashboard's atomic, owner-scoped unit) ----------------

@@ -262,6 +262,12 @@ export async function POST(req: Request) {
 
 // --- GET: list sessions (newest first), reshaped to the RequestSession contract ---
 
+type CheckpointRow = {
+  stage: string;
+  step_order: number;
+  completed_at: string;
+};
+
 type RouteRow = {
   label: string;
   quantity: number;
@@ -275,13 +281,38 @@ type RouteRow = {
   detail: string | null;
   status: string;
   lifecycle: RequestStatus | null;
+  request_route_checkpoints: CheckpointRow[] | null;
 };
+
+// Human label for each checkpoint stage — mirrors the dashboard's stage→label mapping
+// (the DB stores `stage` + `step_order`, not a label). No `scheduled`/`rescheduled` stages.
+const CHECKPOINT_STAGE_LABELS: Record<string, string> = {
+  accepted: "Accepted",
+  packing: "Packing",
+  ready_for_pickup: "Ready for pickup",
+  out_for_delivery: "Out for delivery",
+  completed: "Completed",
+};
+
+/**
+ * Derive a route's display status from its checkpoints: the latest one (by completed_at,
+ * then step_order) → { label, at }. Null when there are no checkpoints (UI falls back to
+ * the raw lifecycle). The dashboard has no display_status column — it derives the same way.
+ */
+function latestCheckpoint(rows: CheckpointRow[] | null | undefined): { label: string; at: string } | null {
+  if (!rows || rows.length === 0) return null;
+  const latest = [...rows].sort((a, b) => {
+    const dt = new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime();
+    return dt !== 0 ? dt : (b.step_order ?? 0) - (a.step_order ?? 0);
+  })[0];
+  return { label: CHECKPOINT_STAGE_LABELS[latest.stage] ?? latest.stage, at: latest.completed_at };
+}
 
 export async function GET() {
   const sb = supabaseAdmin();
   const { data, error } = await sb
     .from("request_sessions")
-    .select("*, request_tasks(*, request_routes(*))")
+    .select("*, request_tasks(*, request_routes(*, request_route_checkpoints(*)))")
     .order("created_at", { ascending: false });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -301,20 +332,27 @@ export async function GET() {
     createdAt: (s.created_at as string) ?? "",
     overallStatus: (s.overall_status as RequestStatus) ?? "Pending",
     tasks: ((s.request_tasks as Record<string, unknown>[]) ?? []).map((t) => {
-      const routes = ((t.request_routes as RouteRow[]) ?? []).map((r) => ({
-        label: r.label,
-        quantity: Number(r.quantity),
-        routeName: r.route_name,
-        logo: r.logo ?? undefined,
-        organisationId: r.organisation_id ?? undefined,
-        workspaceId: r.workspace_id ?? undefined,
-        routeType: r.route_type,
-        availabilityMode: r.availability_mode,
-        costLabel: r.cost_label,
-        detail: r.detail ?? undefined,
-        status: r.status,
-        lifecycle: r.lifecycle ?? undefined,
-      }));
+      const routes = ((t.request_routes as RouteRow[]) ?? []).map((r) => {
+        // displayStatus / last-updated are derived from the latest fulfilment checkpoint;
+        // the full timeline (checkpoints[]) is intentionally not surfaced to caregivers.
+        const cp = latestCheckpoint(r.request_route_checkpoints);
+        return {
+          label: r.label,
+          quantity: Number(r.quantity),
+          routeName: r.route_name,
+          logo: r.logo ?? undefined,
+          organisationId: r.organisation_id ?? undefined,
+          workspaceId: r.workspace_id ?? undefined,
+          routeType: r.route_type,
+          availabilityMode: r.availability_mode,
+          costLabel: r.cost_label,
+          detail: r.detail ?? undefined,
+          status: r.status,
+          lifecycle: r.lifecycle ?? undefined,
+          displayStatus: cp?.label,
+          displayStatusUpdatedAt: cp?.at,
+        };
+      });
       return {
         id: (t.task_key as string) ?? (t.support_type as string),
         fulfilment: t.fulfilment as "route" | "partner",

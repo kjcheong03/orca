@@ -1,9 +1,9 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
 import AddressFields, { type AddressValue } from "@/components/AddressFields";
+import SearchableSelect from "@/components/ui/SearchableSelect";
 import { useApp } from "@/context/AppContext";
-import { AREAS, CONTACT_METHODS } from "@/lib/community";
+import { CONTACT_METHODS, SG_AREAS } from "@/lib/community";
 
 export interface ContactInfo {
   caregiverName: string;
@@ -104,23 +104,13 @@ export default function ContactDetails({
               {tx("General area")}
               <span className="text-danger">*</span>
             </label>
-            <div className="relative">
-              <select
-                value={contact.generalArea}
-                onChange={(e) => onChange("generalArea", e.target.value)}
-                className={`${inputBase} appearance-none pr-9 ${errors.generalArea ? "border-danger" : "border-black/10"}`}
-              >
-                <option value="" disabled>
-                  {tx("Select…")}
-                </option>
-                {AREAS.map((a) => (
-                  <option key={a} value={a}>
-                    {tx(a)}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={18} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-faint" />
-            </div>
+            <SearchableSelect
+              value={contact.generalArea}
+              onChange={(v) => onChange("generalArea", v)}
+              options={SG_AREAS}
+              placeholder={tx("Select an area")}
+              error={!!errors.generalArea}
+            />
             <p className="mt-1 text-[12px] text-faint">{tx("Used to find partners that cover your area.")}</p>
             {errors.generalArea && <p className="mt-1 text-[12px] font-medium text-danger">{tx(errors.generalArea)}</p>}
           </div>

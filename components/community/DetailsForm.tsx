@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, Minus, Plus, X } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import SearchableSelect from "@/components/ui/SearchableSelect";
 import {
   getSupportTemplate,
   isFieldVisible,
@@ -290,6 +291,16 @@ function Field({
             className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-faint"
           />
         </div>
+      );
+      break;
+    case "areaSelect":
+      control = (
+        <SearchableSelect
+          value={(value as string) ?? ""}
+          onChange={onChange}
+          options={field.options ?? []}
+          placeholder={tx("Select an area")}
+        />
       );
       break;
     case "radio":

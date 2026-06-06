@@ -10,7 +10,7 @@ import {
   type RequestStatus,
   type RequestTaskSession,
 } from "@/lib/community";
-import { detailRows, requestRef, taskStatus } from "@/lib/contract";
+import { detailRows, requestRef, routeStatus, routeStatusLabel, taskStatus } from "@/lib/contract";
 
 const STATUS_CLS: Record<RequestStatus, string> = {
   Pending: "bg-warn/20 text-[#8a5a00]",
@@ -21,11 +21,12 @@ const STATUS_CLS: Record<RequestStatus, string> = {
   Cancelled: "bg-black/[0.06] text-faint",
 };
 
-function StatusPill({ status }: { status: RequestStatus }) {
+function StatusPill({ status, label }: { status: RequestStatus; label?: string }) {
   const { tx } = useApp();
+  // `status` (raw lifecycle) sets the colour; `label` (optional checkpoint) sets the text.
   return (
     <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-semibold ${STATUS_CLS[status] ?? STATUS_CLS.Pending}`}>
-      {tx(status)}
+      {tx(label ?? status)}
     </span>
   );
 }
@@ -105,7 +106,7 @@ export default function RequestDetailModal({
           </div>
           <div className="flex items-center gap-2">
             {/* Route-based tasks (food + supplies) carry state on per-route pills below;
-                only partner-assigned tasks get a single header status. */}
+                only partner-assigned tasks get a single header status (raw lifecycle). */}
             {routes.length === 0 && <StatusPill status={taskStatus(task)} />}
             <button type="button" onClick={onClose} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full bg-card shadow-sm">
               <X size={18} className="text-ink" />
@@ -114,13 +115,40 @@ export default function RequestDetailModal({
         </div>
 
         <div className="no-scrollbar space-y-4 overflow-y-auto px-5 pb-8">
-          {/* Rejection reason — shown to the caregiver when a partner declined the request */}
+          {/* Partner-set updates — rejection reason, scheduled time, and notes, shown
+              to the caregiver when present (set on the dashboard side). */}
           {task.rejectionReason && (
             <div className="rounded-[18px] bg-danger-soft p-4 ring-1 ring-danger/20">
               <p className="text-[12px] font-bold uppercase tracking-wide text-[#b42318]">
                 {tx("Why this was declined")}
               </p>
               <p className="mt-1 text-[13px] leading-relaxed text-ink">{task.rejectionReason}</p>
+            </div>
+          )}
+          {task.scheduledFor && (
+            <div className="rounded-[18px] bg-brand-soft p-4">
+              <p className="text-[12px] font-bold uppercase tracking-wide text-brand-dark">
+                {tx("Scheduled for")}
+              </p>
+              <p className="mt-1 text-[13px] font-semibold text-ink">
+                {formatWhen(task.scheduledFor) || task.scheduledFor}
+              </p>
+            </div>
+          )}
+          {task.assignedTo && (
+            <div className="rounded-[18px] bg-card p-4 ring-1 ring-black/[0.06]">
+              <p className="text-[12px] font-bold uppercase tracking-wide text-faint">
+                {tx("Assigned to")}
+              </p>
+              <p className="mt-1 text-[13px] font-semibold text-ink">{task.assignedTo}</p>
+            </div>
+          )}
+          {task.partnerNotes && (
+            <div className="rounded-[18px] bg-card p-4 ring-1 ring-black/[0.06]">
+              <p className="text-[12px] font-bold uppercase tracking-wide text-faint">
+                {tx("Note from the partner")}
+              </p>
+              <p className="mt-1 text-[13px] leading-relaxed text-ink">{task.partnerNotes}</p>
             </div>
           )}
 
@@ -135,8 +163,15 @@ export default function RequestDetailModal({
                     <p className="mt-0.5 text-[12.5px] text-muted">
                       {tx(r.label)} · {tx(r.costLabel)}
                     </p>
+                    {r.displayStatusUpdatedAt && (
+                      <p className="mt-0.5 text-[11px] text-faint">
+                        {txf("Updated {when}", {
+                          when: formatWhen(r.displayStatusUpdatedAt) || r.displayStatusUpdatedAt,
+                        })}
+                      </p>
+                    )}
                   </div>
-                  <StatusPill status={r.lifecycle ?? "Pending"} />
+                  <StatusPill status={routeStatus(r)} label={routeStatusLabel(r)} />
                 </div>
                 {rows.length > 0 && (
                   <div className="mt-2 divide-y divide-black/[0.05] border-t border-black/[0.05] pt-1">
@@ -153,9 +188,6 @@ export default function RequestDetailModal({
               Each route now carries its own collection status (Pending → Completed). */}
           {publicRoutes.length > 0 && (
             <Section label={tx("Distribution")}>
-              <p className="mb-2 text-[12px] leading-snug text-muted">
-                {tx("Collected via public / community distribution — not a standing partner service.")}
-              </p>
               <div className="space-y-2.5">
                 {publicRoutes.map((r) => (
                   <div key={r.label} className="flex items-center justify-between gap-2">
@@ -165,8 +197,15 @@ export default function RequestDetailModal({
                         {r.quantity ? ` ×${r.quantity}` : ""}
                       </p>
                       <p className="truncate text-[12px] text-muted">{r.routeName}</p>
+                      {r.displayStatusUpdatedAt && (
+                        <p className="mt-0.5 text-[11px] text-faint">
+                          {txf("Updated {when}", {
+                            when: formatWhen(r.displayStatusUpdatedAt) || r.displayStatusUpdatedAt,
+                          })}
+                        </p>
+                      )}
                     </div>
-                    <StatusPill status={r.lifecycle ?? "Pending"} />
+                    <StatusPill status={routeStatus(r)} label={routeStatusLabel(r)} />
                   </div>
                 ))}
               </div>

@@ -46,6 +46,7 @@ export type FieldKind =
   | "number"
   | "stepper"
   | "select"
+  | "areaSelect"
   | "multiselect"
   | "multiselectDropdown"
   | "radio"
@@ -94,9 +95,15 @@ export interface SupportTemplate {
 }
 
 // Shared option sets — keep these in one place so they're easy to tweak.
-export const AREAS = ["Ang Mo Kio", "Bishan", "Toa Payoh", "Other"] as const;
-// Physical collection / pickup points — no "Other" (there is no "Other" distribution point).
-export const COLLECTION_AREAS = ["Ang Mo Kio", "Bishan", "Toa Payoh"] as const;
+// Representative Singapore planning areas / HDB towns for the location pickers
+// (searchable dropdown). No "Other" — the list covers the residential towns.
+export const SG_AREAS = [
+  "Ang Mo Kio", "Bedok", "Bishan", "Boon Lay", "Bukit Batok", "Bukit Merah",
+  "Bukit Panjang", "Bukit Timah", "Central Area", "Changi", "Choa Chu Kang",
+  "Clementi", "Geylang", "Hougang", "Jurong East", "Jurong West", "Kallang",
+  "Marine Parade", "Novena", "Pasir Ris", "Punggol", "Queenstown", "Sembawang",
+  "Sengkang", "Serangoon", "Tampines", "Tanglin", "Toa Payoh", "Woodlands", "Yishun",
+] as const;
 export const URGENCY = ["Today", "Within 2–3 days", "This week", "Not urgent"] as const;
 export const CONTACT_METHODS = ["Phone call", "WhatsApp", "SMS", "Email"] as const;
 export const LANGUAGES = [
@@ -159,10 +166,10 @@ export const supportTemplates: SupportTemplate[] = [
       // Delivery (or either) — address comes from Personal details.
       { key: "preferredDeliveryTime", label: "Preferred delivery time (optional)", kind: "text", placeholder: "e.g. before 12pm", showWhen: { field: "suppliesFulfilment", equals: "Delivery if available" } },
       // Collection.
-      { key: "preferredCollectionArea", label: "Preferred collection area", kind: "select", options: [...COLLECTION_AREAS], required: true, showWhen: { field: "suppliesFulfilment", equals: "Collect from distribution point" } },
+      { key: "preferredCollectionArea", label: "Preferred collection area", kind: "areaSelect", options: [...SG_AREAS], required: true, showWhen: { field: "suppliesFulfilment", equals: "Collect from distribution point" } },
       { key: "preferredCollectionTime", label: "Preferred collection time (optional)", kind: "text", placeholder: "e.g. this afternoon", showWhen: { field: "suppliesFulfilment", equals: "Collect from distribution point" } },
       // Either is okay — collection area + timing (address is in Personal details).
-      { key: "preferredCollectionArea", label: "Preferred collection area", kind: "select", options: [...COLLECTION_AREAS], required: true, showWhen: { field: "suppliesFulfilment", equals: "Either is okay" } },
+      { key: "preferredCollectionArea", label: "Preferred collection area", kind: "areaSelect", options: [...SG_AREAS], required: true, showWhen: { field: "suppliesFulfilment", equals: "Either is okay" } },
       { key: "preferredCollectionTime", label: "Preferred collection / delivery time (optional)", kind: "text", placeholder: "e.g. this afternoon", showWhen: { field: "suppliesFulfilment", equals: "Either is okay" } },
       notesField,
     ],
@@ -280,10 +287,10 @@ export const supportTemplates: SupportTemplate[] = [
       // Doorstep delivery — address comes from Personal details.
       { key: "preferredDeliveryWindow", label: "Preferred delivery window", kind: "text", placeholder: "e.g. weekday mornings", showWhen: { field: "fulfilmentMethod", equals: "Doorstep delivery" }, showWhenSubtype: "Food pack / rations" },
       // Collect from distribution point
-      { key: "pickupArea", label: "Preferred pickup area", kind: "select", options: [...COLLECTION_AREAS], required: true, showWhen: { field: "fulfilmentMethod", equals: "Collect from distribution point" }, showWhenSubtype: "Food pack / rations" },
+      { key: "pickupArea", label: "Preferred pickup area", kind: "areaSelect", options: [...SG_AREAS], required: true, showWhen: { field: "fulfilmentMethod", equals: "Collect from distribution point" }, showWhenSubtype: "Food pack / rations" },
       { key: "pickupTime", label: "Preferred pickup time (optional)", kind: "text", placeholder: "e.g. this afternoon", showWhen: { field: "fulfilmentMethod", equals: "Collect from distribution point" }, showWhenSubtype: "Food pack / rations" },
       // Either is okay — preferred area only (address is in Personal details).
-      { key: "generalPreferredArea", label: "Preferred area", kind: "select", options: [...COLLECTION_AREAS], required: true, showWhen: { field: "fulfilmentMethod", equals: "Either is okay" }, showWhenSubtype: "Food pack / rations" },
+      { key: "generalPreferredArea", label: "Preferred area", kind: "areaSelect", options: [...SG_AREAS], required: true, showWhen: { field: "fulfilmentMethod", equals: "Either is okay" }, showWhenSubtype: "Food pack / rations" },
       { key: "timingConstraints", label: "Any timing constraints (optional)", kind: "text", placeholder: "e.g. before the weekend", showWhen: { field: "fulfilmentMethod", equals: "Either is okay" }, showWhenSubtype: "Food pack / rations" },
       // Restrictions
       {
