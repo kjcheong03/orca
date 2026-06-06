@@ -12,18 +12,31 @@ export default function SegmentedToggle<T extends string>({
   options,
   value,
   onChange,
+  size = "md",
+  fluid = true,
+  bare = false,
 }: {
   options: Option<T>[];
   value: T;
   onChange: (value: T) => void;
+  /** "sm" is a compact pill (e.g. an inline corner toggle); "md" is the full control. */
+  size?: "sm" | "md";
+  /** Full-width with equal-width segments (default), or content-sized when false. */
+  fluid?: boolean;
+  /** Drop the enclosing track (no background/padding/shadow) — just the segments. */
+  bare?: boolean;
 }) {
   // Unique per instance so multiple toggles don't share the sliding pill.
   const layoutId = useId();
+  const pad = size === "sm" ? "p-0.5" : "p-1";
+  const btn = size === "sm" ? "px-3 py-1 text-[12px]" : "px-4 py-2 text-[13px]";
   return (
     <div
       role="group"
       aria-label={options.map((o) => o.label).join(" / ")}
-      className="flex w-full items-center gap-1 rounded-full bg-track p-1 shadow-sm"
+      className={`${fluid ? "flex w-full" : "inline-flex"} items-center gap-1 ${
+        bare ? "" : `rounded-full bg-track ${pad} shadow-sm`
+      }`}
     >
       {options.map((opt) => {
         const active = opt.value === value;
@@ -33,7 +46,7 @@ export default function SegmentedToggle<T extends string>({
             type="button"
             onClick={() => onChange(opt.value)}
             aria-pressed={active}
-            className="relative flex-1 rounded-full px-4 py-2 text-[13px] font-semibold"
+            className={`relative rounded-full font-semibold ${btn} ${fluid ? "flex-1" : ""}`}
           >
             {active && (
               <motion.span

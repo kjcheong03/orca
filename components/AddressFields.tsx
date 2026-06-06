@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Loader2, MapPin } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { composeAddress } from "@/lib/profiles";
 
 export interface AddressValue {
   postalCode?: string;
@@ -85,34 +84,51 @@ export default function AddressFields({
     }
   };
 
-  const preview = composeAddress(value);
   const postalBorder = error ? "border-danger" : "border-black/10";
 
   return (
-    <div>
-      <div className="flex gap-3">
-        <div id={postalId} className="flex-1 scroll-mt-24">
-          <Label required={required} className={error ? labelClass.replace(/text-(faint|ink)/, "text-danger") : labelClass}>
-            {tx("Postal code")}
-          </Label>
-          <div className="relative">
-            <input
-              value={value.postalCode ?? ""}
-              onChange={(e) => onPostal(e.target.value)}
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="560123"
-              className={`${INPUT} ${postalBorder}`}
-            />
-            {lookup === "loading" && (
-              <Loader2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-faint" />
-            )}
-            {lookup === "done" && (
-              <Check size={16} strokeWidth={3} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1a8f5e]" />
-            )}
-          </div>
+    <div className="space-y-3">
+      {/* Postal code — the lookup key; auto-fills the block & street below. */}
+      <div id={postalId} className="scroll-mt-24">
+        <Label
+          required={required}
+          className={error ? labelClass.replace(/text-(faint|ink)/, "text-danger") : labelClass}
+        >
+          {tx("Postal code")}
+        </Label>
+        <div className="relative">
+          <input
+            value={value.postalCode ?? ""}
+            onChange={(e) => onPostal(e.target.value)}
+            inputMode="numeric"
+            maxLength={6}
+            placeholder="560123"
+            className={`${INPUT} ${postalBorder}`}
+          />
+          {lookup === "loading" && (
+            <Loader2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-faint" />
+          )}
+          {lookup === "done" && (
+            <Check size={16} strokeWidth={3} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1a8f5e]" />
+          )}
         </div>
-        <div className="w-16">
+      </div>
+
+      {/* Block & street — auto-filled from the postal code (above), but editable so
+          users can correct it or type it in when the lookup can't find their address. */}
+      <div>
+        <Label required={required} className={labelClass}>{tx("Block & street")}</Label>
+        <input
+          value={value.addressLine ?? ""}
+          onChange={(e) => onChange({ addressLine: e.target.value })}
+          placeholder={tx("Auto-filled from postal code")}
+          className={`${INPUT} border-black/10`}
+        />
+      </div>
+
+      {/* Floor & unit — entered manually; the postal code can't derive these. */}
+      <div className="flex gap-3">
+        <div className="flex-1">
           <Label className={labelClass}>{tx("Floor")}</Label>
           <input
             value={value.floor ?? ""}
@@ -122,7 +138,7 @@ export default function AddressFields({
             className={`${INPUT} border-black/10`}
           />
         </div>
-        <div className="w-16">
+        <div className="flex-1">
           <Label className={labelClass}>{tx("Unit")}</Label>
           <input
             value={value.unit ?? ""}
@@ -134,17 +150,12 @@ export default function AddressFields({
       </div>
 
       {lookup === "error" ? (
-        <p className="mt-2 text-[12px] font-medium text-danger">{tx("Couldn't find that postal code.")}</p>
+        <p className="text-[12px] font-medium text-danger">
+          {tx("Couldn't find that postal code — please enter your block & street above.")}
+        </p>
       ) : error ? (
-        <p className="mt-2 text-[12px] font-medium text-danger">{error}</p>
-      ) : (
-        preview && (
-          <p className="mt-2 flex items-start gap-1.5 text-[12.5px] leading-snug text-muted">
-            <MapPin size={14} className="mt-0.5 shrink-0 text-brand" />
-            {preview}
-          </p>
-        )
-      )}
+        <p className="text-[12px] font-medium text-danger">{error}</p>
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Check } from "lucide-react";
 import Mascot from "@/components/Mascot";
@@ -10,7 +10,7 @@ import DetailsForm, { fieldDomId } from "@/components/community/DetailsForm";
 import ReviewMatch from "@/components/community/ReviewMatch";
 import { useApp } from "@/context/AppContext";
 import { patient } from "@/lib/data";
-import { composeAddress, ensureAddressParts, loadActiveProfile } from "@/lib/profiles";
+import { composeAddress, ensureAddressParts, loadActiveProfile, loadCaregiver } from "@/lib/profiles";
 import {
   getSupportTemplate,
   isFieldVisible,
@@ -79,6 +79,9 @@ function needsAddress(tasks: DraftTasks): boolean {
         return true;
     } else if (type === "welfare") {
       if (d.checkMethod === "Home visit" || d.checkMethod === "Either is okay") return true;
+    } else if (type === "transport") {
+      // Assisted transport always picks up from the recipient's home — needs the address.
+      return true;
     }
   }
   return false;
@@ -138,20 +141,31 @@ function StepIndicator({
   );
 }
 
-export default function CommunityRequest({ onExit }: { onExit: () => void }) {
+export default function CommunityRequest({
+  onExit,
+  initialType,
+}: {
+  onExit: () => void;
+  /** Pre-tick this support type on Step 1 (set when the user taps a home-screen icon). */
+  initialType?: SupportTypeId;
+}) {
   const { tx } = useApp();
   const [step, setStep] = useState(1);
-  const [tasks, setTasks] = useState<DraftTasks>({});
+  const [tasks, setTasks] = useState<DraftTasks>(() =>
+    initialType ? { [initialType]: { subtypes: [], details: {} } } : {},
+  );
   const [errors, setErrors] = useState<Partial<Record<SupportTypeId, Record<string, string>>>>({});
-  // Prefill from the active elderly profile (postal/floor/unit + composed
-  // address), so Step 3's address matches what's saved on the Profile screen.
+  // Prefill from the caregiver's own profile (name + contact) and the active elderly
+  // profile (postal/floor/unit + composed address), so Step 3 matches what's saved on
+  // the Profile screen.
   const [contact, setContact] = useState<ContactInfo>(() => {
     const a = ensureAddressParts(loadActiveProfile());
+    const c = loadCaregiver();
     return {
-      caregiverName: "Chloe",
-      contactNumber: "+65 8123 4567",
+      caregiverName: c.name,
+      contactNumber: c.contactNumber,
       contactMethod: "WhatsApp",
-      email: "",
+      email: c.email,
       careRecipientName: a.name.split(" ").slice(0, 2).join(" ") || shortName,
       generalArea: "Ang Mo Kio",
       address: composeAddress(a),
@@ -167,6 +181,13 @@ export default function CommunityRequest({ onExit }: { onExit: () => void }) {
   const [step1Errors, setStep1Errors] = useState<SupportTypeId[]>([]);
   const [submitted, setSubmitted] = useState(false);
 
+  // Scroll the form body (not the page) back to top on each step change, since the
+  // header + step indicator + footer are now locked and only this region scrolls.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [step]);
+
   const activeEntries = useMemo(
     () =>
       (Object.entries(tasks) as [SupportTypeId, TaskState][]).filter(
@@ -179,7 +200,7 @@ export default function CommunityRequest({ onExit }: { onExit: () => void }) {
   // Address is only asked when the request involves delivery / a home visit.
   const addressRequired = needsAddress(tasks);
   // Area matters only for welfare/referral routing — and only when there's no
-  // address to infer it from (supplies/food/transport are area-independent).
+  // address to infer it from (supplies/food are area-only; transport collects a full address).
   const areaNeeded =
     !addressRequired &&
     (["welfare", "referral"] as SupportTypeId[]).some((t) => (tasks[t]?.subtypes.length ?? 0) > 0);
@@ -282,8 +303,13 @@ export default function CommunityRequest({ onExit }: { onExit: () => void }) {
     if (contact.contactMethod === "Email" && !contact.email.trim()) e.email = "Please add an email address";
     if (!contact.careRecipientName.trim()) e.careRecipientName = "Please add a name";
     if (addressRequired) {
-      // Address is auto-filled from the postal code, so that's the field to check.
-      if (!contact.postalCode.trim()) e.postalCode = "Please add a postal code";
+      // Postal code first; then require the block & street (auto-filled, but the user
+      // must supply it if the lookup couldn't find one). Both surface on the postal slot.
+      if (!contact.postalCode.trim()) {
+        e.postalCode = "Please add a postal code";
+      } else if (!contact.addressLine.trim()) {
+        e.postalCode = "Please add your block & street";
+      }
     } else if (areaNeeded && !contact.generalArea.trim()) {
       e.generalArea = "Please choose an area";
     }
@@ -373,9 +399,9 @@ export default function CommunityRequest({ onExit }: { onExit: () => void }) {
   };
 
   return (
-    <div className="mx-auto w-full max-w-xl space-y-5 px-4 pb-28 pt-5 lg:pt-8">
-      {/* Header */}
-      <div className="flex items-center gap-3">
+    <div className="mx-auto flex h-[calc(100dvh-5rem-env(safe-area-inset-bottom))] w-full max-w-xl flex-col px-4 pt-5 lg:h-[calc(100dvh-3.5rem)] lg:pt-8">
+      {/* Header (locked) */}
+      <div className="flex shrink-0 items-center gap-3">
         {!submitted && (
           <button
             type="button"
@@ -399,20 +425,24 @@ export default function CommunityRequest({ onExit }: { onExit: () => void }) {
         </div>
       </div>
 
-      <StepIndicator
-        step={step}
-        submitted={submitted}
-        maxReachable={maxReachable}
-        onStepClick={goToStep}
-      />
+      <div className="mt-5 shrink-0">
+        <StepIndicator
+          step={step}
+          submitted={submitted}
+          maxReachable={maxReachable}
+          onStepClick={goToStep}
+        />
+      </div>
 
-      <motion.div
-        key={step}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-        className="space-y-4"
-      >
+      {/* Scrollable form body — the only region that scrolls */}
+      <div ref={scrollRef} className="slim-scrollbar mt-5 min-h-0 flex-1 overflow-y-auto px-1 py-1">
+        <motion.div
+          key={step}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          className="space-y-4"
+        >
         {step === 1 && (
           <ChooseHelp
             tasks={tasks}
@@ -470,10 +500,12 @@ export default function CommunityRequest({ onExit }: { onExit: () => void }) {
             onReset={onExit}
           />
         )}
-      </motion.div>
+        </motion.div>
+      </div>
 
-      {/* Footer nav for steps 1 & 2 (Step 3 has its own actions) */}
-      {step === 1 && (
+      {/* Footer nav (locked) — steps 1-3; step 4 (review) carries its own actions */}
+      <div className="shrink-0 pt-3 empty:hidden">
+        {step === 1 && (
         <button
           type="button"
           disabled={!hasNeed}
@@ -521,6 +553,7 @@ export default function CommunityRequest({ onExit }: { onExit: () => void }) {
           </button>
         </div>
       )}
+      </div>
     </div>
   );
 }

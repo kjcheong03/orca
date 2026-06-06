@@ -139,6 +139,43 @@ export function loadActiveProfile(): ElderProfile {
   return profiles.find((p) => p.id === id) ?? profiles[0];
 }
 
+// --- caregiver (the person submitting requests) -----------------------------
+// Their own name + contact, prefilled into the community request form. Only the
+// name is required; contact details are optional. Stored locally (prototype).
+
+export interface CaregiverProfile {
+  name: string;
+  contactNumber: string;
+  email: string;
+}
+
+const CAREGIVER_KEY = "cara-caregiver";
+
+/** Mock defaults — the same caregiver we use throughout the prototype. */
+export function defaultCaregiver(): CaregiverProfile {
+  return { name: "Chloe", contactNumber: "+65 8123 4567", email: "chloe@example.com" };
+}
+
+export function loadCaregiver(): CaregiverProfile {
+  if (typeof window === "undefined") return defaultCaregiver();
+  try {
+    const raw = window.localStorage.getItem(CAREGIVER_KEY);
+    if (!raw) return defaultCaregiver();
+    return { ...defaultCaregiver(), ...(JSON.parse(raw) as Partial<CaregiverProfile>) };
+  } catch {
+    return defaultCaregiver();
+  }
+}
+
+export function saveCaregiver(c: CaregiverProfile): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(CAREGIVER_KEY, JSON.stringify(c));
+  } catch {
+    /* ignore */
+  }
+}
+
 export function blankMedicine(): EmergencyMedicine {
   return { name: "", dose: "", instructions: "" };
 }

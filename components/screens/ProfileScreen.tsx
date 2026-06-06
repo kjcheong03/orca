@@ -1,19 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, FileText, HeartPulse, LogOut, MapPin, Pencil, Pill, Plus, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, FileText, HeartPulse, LogOut, MapPin, Pencil, Pill, Plus, Trash2, User, X } from "lucide-react";
 import AddressFields from "@/components/AddressFields";
 import { useApp } from "@/context/AppContext";
 import {
   blankMedicine,
   blankProfile,
   composeAddress,
+  defaultCaregiver,
   defaultProfiles,
   ensureAddressParts,
   loadActiveId,
+  loadCaregiver,
   loadProfiles,
   saveActiveId,
+  saveCaregiver,
   saveProfiles,
+  type CaregiverProfile,
   type ElderProfile,
 } from "@/lib/profiles";
 
@@ -104,6 +108,9 @@ export default function ProfileScreen() {
   const [isNew, setIsNew] = useState(false);
   const [draft, setDraft] = useState<ElderProfile | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  // The caregiver's own profile (name + contact) — used to prefill request forms.
+  const [caregiver, setCaregiver] = useState<CaregiverProfile>(defaultCaregiver);
+  const [caregiverOpen, setCaregiverOpen] = useState(false);
 
   // localStorage is client-only — load after mount (initial render uses defaults,
   // matching the server render to avoid a hydration mismatch).
@@ -112,6 +119,7 @@ export default function ProfileScreen() {
     setProfiles(stored);
     const id = loadActiveId();
     setActiveId(stored.some((p) => p.id === id) ? id : stored[0].id);
+    setCaregiver(loadCaregiver());
     setHydrated(true);
   }, []);
 
@@ -231,8 +239,8 @@ export default function ProfileScreen() {
               </>
             ) : (
               <>
-                <IconButton label={tx("Edit profile")} onClick={startEdit}>
-                  <Pencil size={16} />
+                <IconButton label={tx("Your profile")} onClick={() => setCaregiverOpen(true)}>
+                  <User size={16} />
                 </IconButton>
                 <IconButton label={tx("Log out")} onClick={() => { /* prototype: no auth yet */ }}>
                   <LogOut size={16} />
@@ -244,12 +252,32 @@ export default function ProfileScreen() {
 
         {/* Profile card */}
         <div className="overflow-hidden rounded-[28px] bg-white shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
-          {/* Gradient header (live preview while editing) */}
-          <div className="bg-gradient-to-br from-[#5b9be8] to-[#2563eb] px-6 py-5 text-white">
-            <h1 className="text-[22px] font-bold leading-tight">{shown.name || tx("New profile")}</h1>
-            <p className="mt-1 text-[15px] text-white/90">
-              {tx(shown.sex)} · {shown.age || "—"}
-            </p>
+          {/* Gradient header — the profile preview when viewing; a clear "Edit profile"
+              title when editing (the fields below already carry the name/sex/age). */}
+          <div className="flex items-center justify-between gap-3 bg-gradient-to-br from-[#5b9be8] to-[#2563eb] px-6 py-5 text-white">
+            {editing ? (
+              <h1 className="text-[20px] font-bold leading-tight">
+                {isNew ? tx("New profile") : tx("Edit profile")}
+              </h1>
+            ) : (
+              <>
+                <div className="min-w-0">
+                  <h1 className="text-[22px] font-bold leading-tight">{shown.name || tx("New profile")}</h1>
+                  <p className="mt-1 text-[15px] text-white/90">
+                    {tx(shown.sex)} · {shown.age || "—"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={startEdit}
+                  aria-label={tx("Edit profile")}
+                  title={tx("Edit profile")}
+                  className="shrink-0 text-white/85 transition-colors hover:text-white active:scale-95"
+                >
+                  <Pencil size={24} />
+                </button>
+              </>
+            )}
           </div>
 
           {editing && draft ? (
@@ -298,12 +326,117 @@ export default function ProfileScreen() {
           )}
         </div>
       </div>
+
+      {caregiverOpen && (
+        <CaregiverSheet
+          caregiver={caregiver}
+          tx={tx}
+          onClose={() => setCaregiverOpen(false)}
+          onSave={(c) => {
+            setCaregiver(c);
+            saveCaregiver(c);
+            setCaregiverOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return <label className="mb-1.5 block text-[12px] font-bold uppercase tracking-wider text-faint">{children}</label>;
+}
+
+/** The caregiver's own profile (name + contact) — viewed/edited from the toolbar. */
+function CaregiverSheet({
+  caregiver,
+  onSave,
+  onClose,
+  tx,
+}: {
+  caregiver: CaregiverProfile;
+  onSave: (c: CaregiverProfile) => void;
+  onClose: () => void;
+  tx: (s: string) => string;
+}) {
+  const [draft, setDraft] = useState<CaregiverProfile>(caregiver);
+  const nameMissing = !draft.name.trim();
+  const set = (partial: Partial<CaregiverProfile>) => setDraft((d) => ({ ...d, ...partial }));
+
+  return (
+    <div className="fade-enter fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true">
+      <button type="button" aria-label={tx("Close")} onClick={onClose} className="absolute inset-0 bg-black/40" />
+      <div className="pop-enter relative w-full max-w-md rounded-t-[28px] bg-card p-6 sm:rounded-[28px]">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="display text-[18px] text-ink">{tx("Your profile")}</h2>
+            <p className="mt-0.5 text-[12.5px] leading-snug text-muted">
+              {tx("Used to fill in your community support requests.")}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={tx("Close")}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-card shadow-sm"
+          >
+            <X size={18} className="text-ink" />
+          </button>
+        </div>
+
+        <div className="mt-4 space-y-4">
+          <div>
+            <FieldLabel>
+              {tx("Your name")} <span className="text-danger">*</span>
+            </FieldLabel>
+            <input
+              value={draft.name}
+              onChange={(e) => set({ name: e.target.value })}
+              placeholder={tx("e.g. Chloe")}
+              className={inputCls}
+            />
+            {nameMissing && (
+              <p className="mt-1 text-[12px] font-medium text-danger">{tx("Please add your name")}</p>
+            )}
+          </div>
+          <div>
+            <FieldLabel>{tx("Contact number")}</FieldLabel>
+            <input
+              value={draft.contactNumber}
+              onChange={(e) => set({ contactNumber: e.target.value })}
+              placeholder="+65 8123 4567"
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <FieldLabel>{tx("Email")}</FieldLabel>
+            <input
+              type="email"
+              value={draft.email}
+              onChange={(e) => set({ email: e.target.value })}
+              placeholder="name@example.com"
+              className={inputCls}
+            />
+          </div>
+        </div>
+
+        <button
+          type="button"
+          disabled={nameMissing}
+          onClick={() =>
+            onSave({
+              name: draft.name.trim(),
+              contactNumber: draft.contactNumber.trim(),
+              email: draft.email.trim(),
+            })
+          }
+          className="mt-5 w-full rounded-full bg-brand py-3 text-[15px] font-semibold text-white shadow-sm transition-colors disabled:bg-[#d5d9e1] disabled:text-[#6b7280] disabled:shadow-none"
+        >
+          {tx("Save")}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function EditForm({
@@ -335,13 +468,20 @@ function EditForm({
         <div className="flex gap-3">
           <div className="flex-1">
             <FieldLabel>{tx("Sex")}</FieldLabel>
-            <select value={draft.sex} onChange={(e) => patch({ sex: e.target.value })} className={inputCls}>
-              {["Female", "Male"].map((s) => (
-                <option key={s} value={s}>
-                  {tx(s)}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={draft.sex}
+                onChange={(e) => patch({ sex: e.target.value })}
+                className={`${inputCls} appearance-none pr-9`}
+              >
+                {["Female", "Male"].map((s) => (
+                  <option key={s} value={s}>
+                    {tx(s)}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={18} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-faint" />
+            </div>
           </div>
           <div className="w-28">
             <FieldLabel>{tx("Age")}</FieldLabel>

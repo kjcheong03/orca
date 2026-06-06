@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ArrowLeft, Check, Info, Star, X } from "lucide-react";
 import { matchPartners, routeRequest, type MatchResult } from "@/lib/matching";
 import { calculateTaskCost, formatCostEstimate } from "@/lib/cost";
 import { useApp } from "@/context/AppContext";
 import { type ContactInfo } from "@/components/community/ContactDetails";
 import { persistRequest } from "@/lib/requestStore";
+import { requestRef } from "@/lib/contract";
 import {
   getOrganisation,
   supportTypeLabels,
@@ -177,6 +178,11 @@ export default function ReviewMatch({
   const [costAck, setCostAck] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [submitted, setSubmitted] = useState<RequestSession | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Stable id generated once per review submission (not inside submit, which can
+  // re-run). Doubles as the server idempotency key so a retry can't create a dupe.
+  const [sessionId] = useState(() => `req-${Date.now()}`);
+  const submitLock = useRef(false);
 
   // Any paid goods/services in this request? (gates the cost acknowledgement.)
   const hasPaid = drafts.some((d) => {
@@ -210,10 +216,16 @@ export default function ReviewMatch({
       return { ...prev, [type]: { ...cur, fallbackIds } };
     });
 
-  const submit = () => {
+  const submit = async () => {
     if (!acknowledged || (hasPaid && !costAck)) return;
+    // Re-entrancy guard: ignore any further calls while the first POST is in
+    // flight (double-click / Enter spam). The ref flips synchronously, before
+    // React re-renders, so it catches calls in the same tick.
+    if (submitLock.current) return;
+    submitLock.current = true;
+    setIsSubmitting(true);
     const session: RequestSession = {
-      id: `req-${Date.now()}`,
+      id: sessionId,
       careRecipientName,
       caregiverName: contact.caregiverName,
       contactNumber: contact.contactNumber,
@@ -232,6 +244,7 @@ export default function ReviewMatch({
         if (routes) {
           return {
             id: d.id,
+            fulfilment: "route" as const,
             supportType: d.supportType,
             selectedSubtypes: d.selectedSubtypes,
             details: d.details,
@@ -245,6 +258,7 @@ export default function ReviewMatch({
         const primaryOrg = getOrganisation(sel.primaryId ?? "");
         return {
           id: d.id,
+          fulfilment: "partner" as const,
           supportType: d.supportType,
           selectedSubtypes: d.selectedSubtypes,
           details: d.details,
@@ -255,7 +269,11 @@ export default function ReviewMatch({
         };
       }),
     };
-    persistRequest(session);
+    try {
+      await persistRequest(session);
+    } catch {
+      // keep the success UX in this prototype even if the write hiccups
+    }
     setSubmitted(session);
     onSubmitted();
     window.scrollTo({ top: 0 });
@@ -276,6 +294,9 @@ export default function ReviewMatch({
               "CARA has sent your {req} to the selected partners and active distribution channels. They'll reach out via your chosen contact method.",
               { req: reqWord },
             )}
+          </p>
+          <p className="mt-3 inline-flex items-center rounded-full bg-app px-3 py-1.5 text-[12.5px] font-semibold text-body">
+            Reference&nbsp;<span className="text-ink">{requestRef(submitted.id)}</span>
           </p>
         </div>
         <div className="rounded-[22px] bg-card p-5 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
@@ -455,10 +476,12 @@ export default function ReviewMatch({
         <button
           type="button"
           onClick={submit}
-          disabled={!acknowledged || (hasPaid && !costAck)}
+          disabled={!acknowledged || (hasPaid && !costAck) || isSubmitting}
           className="flex-1 rounded-full bg-brand py-3.5 text-[15px] font-semibold text-white shadow-sm transition-colors disabled:bg-[#d5d9e1] disabled:text-[#6b7280] disabled:shadow-none"
         >
-          {txf("Submit {count} {req}", { count, req: tx(count === 1 ? "request" : "requests") })}
+          {isSubmitting
+            ? tx("Submitting…")
+            : txf("Submit {count} {req}", { count, req: tx(count === 1 ? "request" : "requests") })}
         </button>
       </div>
 

@@ -1,33 +1,26 @@
 // ---------------------------------------------------------------------------
-// Local request log for the community help flow (frontend prototype).
-//
-// Submitted requests are persisted to localStorage so the caregiver can see a
-// log of what they've sent and its status. No backend — this is a mock store.
+// Request log — backed by Supabase via the server-side /api/requests route.
+// Writes are server-only (the payload carries caregiver/care-recipient PII).
 // ---------------------------------------------------------------------------
 
-import type { RequestSession } from "./community";
+import type { RequestSession } from "./contract";
 
-const KEY = "cara.requests";
-
-/** All submitted requests, newest first. Safe on the server (returns []). */
-export function loadRequests(): RequestSession[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as RequestSession[]) : [];
-  } catch {
-    return [];
-  }
+/**
+ * All submitted requests, newest first. Throws on failure (rather than returning []),
+ * so the caller can tell a genuine empty list apart from a failed load and avoid showing
+ * a misleading "no requests" state.
+ */
+export async function loadRequests(): Promise<RequestSession[]> {
+  const res = await fetch("/api/requests", { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to load requests (${res.status})`);
+  return (await res.json()) as RequestSession[];
 }
 
-/** Prepend a newly submitted request to the log. */
-export function persistRequest(session: RequestSession): void {
-  if (typeof window === "undefined") return;
-  try {
-    const all = loadRequests();
-    all.unshift(session);
-    window.localStorage.setItem(KEY, JSON.stringify(all));
-  } catch {
-    // ignore quota / serialization errors in the prototype
-  }
+/** Persist a newly submitted request (server-side insert into Supabase). */
+export async function persistRequest(session: RequestSession): Promise<void> {
+  await fetch("/api/requests", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(session),
+  });
 }

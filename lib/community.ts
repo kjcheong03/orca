@@ -8,21 +8,34 @@
 // Everything here is frontend mock data — easy to edit and extend.
 // ---------------------------------------------------------------------------
 
-// --- support types ---------------------------------------------------------
+// --- shared request contract (single source of truth in ./contract) --------
+// These types/values are defined once in lib/contract.ts and re-exported here
+// so existing imports from "@/lib/community" keep working unchanged.
 
-export type SupportTypeId =
-  | "supplies"
-  | "food"
-  | "welfare"
-  | "transport"
-  | "referral";
+import {
+  supportTypeLabels,
+  type SupportTypeId,
+  type RequestStatus,
+  type SupplyAvailabilityMode,
+  type FulfilmentRoute,
+  type CostType,
+  type CostBreakdownLine,
+  type CostEstimate,
+  type RequestTaskSession,
+  type RequestSession,
+} from "./contract";
 
-export const supportTypeLabels: Record<SupportTypeId, string> = {
-  supplies: "Health / emergency supplies",
-  food: "Food / meal support",
-  welfare: "Welfare check",
-  transport: "Assisted transport",
-  referral: "Care referral / navigation",
+export {
+  supportTypeLabels,
+  type SupportTypeId,
+  type RequestStatus,
+  type SupplyAvailabilityMode,
+  type FulfilmentRoute,
+  type CostType,
+  type CostBreakdownLine,
+  type CostEstimate,
+  type RequestTaskSession,
+  type RequestSession,
 };
 
 // --- form field templates --------------------------------------------------
@@ -82,6 +95,8 @@ export interface SupportTemplate {
 
 // Shared option sets — keep these in one place so they're easy to tweak.
 export const AREAS = ["Ang Mo Kio", "Bishan", "Toa Payoh", "Other"] as const;
+// Physical collection / pickup points — no "Other" (there is no "Other" distribution point).
+export const COLLECTION_AREAS = ["Ang Mo Kio", "Bishan", "Toa Payoh"] as const;
 export const URGENCY = ["Today", "Within 2–3 days", "This week", "Not urgent"] as const;
 export const CONTACT_METHODS = ["Phone call", "WhatsApp", "SMS", "Email"] as const;
 export const LANGUAGES = [
@@ -144,10 +159,10 @@ export const supportTemplates: SupportTemplate[] = [
       // Delivery (or either) — address comes from Personal details.
       { key: "preferredDeliveryTime", label: "Preferred delivery time (optional)", kind: "text", placeholder: "e.g. before 12pm", showWhen: { field: "suppliesFulfilment", equals: "Delivery if available" } },
       // Collection.
-      { key: "preferredCollectionArea", label: "Preferred collection area", kind: "select", options: [...AREAS], required: true, showWhen: { field: "suppliesFulfilment", equals: "Collect from distribution point" } },
+      { key: "preferredCollectionArea", label: "Preferred collection area", kind: "select", options: [...COLLECTION_AREAS], required: true, showWhen: { field: "suppliesFulfilment", equals: "Collect from distribution point" } },
       { key: "preferredCollectionTime", label: "Preferred collection time (optional)", kind: "text", placeholder: "e.g. this afternoon", showWhen: { field: "suppliesFulfilment", equals: "Collect from distribution point" } },
       // Either is okay — collection area + timing (address is in Personal details).
-      { key: "preferredCollectionArea", label: "Preferred collection area", kind: "select", options: [...AREAS], required: true, showWhen: { field: "suppliesFulfilment", equals: "Either is okay" } },
+      { key: "preferredCollectionArea", label: "Preferred collection area", kind: "select", options: [...COLLECTION_AREAS], required: true, showWhen: { field: "suppliesFulfilment", equals: "Either is okay" } },
       { key: "preferredCollectionTime", label: "Preferred collection / delivery time (optional)", kind: "text", placeholder: "e.g. this afternoon", showWhen: { field: "suppliesFulfilment", equals: "Either is okay" } },
       notesField,
     ],
@@ -265,10 +280,10 @@ export const supportTemplates: SupportTemplate[] = [
       // Doorstep delivery — address comes from Personal details.
       { key: "preferredDeliveryWindow", label: "Preferred delivery window", kind: "text", placeholder: "e.g. weekday mornings", showWhen: { field: "fulfilmentMethod", equals: "Doorstep delivery" }, showWhenSubtype: "Food pack / rations" },
       // Collect from distribution point
-      { key: "pickupArea", label: "Preferred pickup area", kind: "select", options: [...AREAS], required: true, showWhen: { field: "fulfilmentMethod", equals: "Collect from distribution point" }, showWhenSubtype: "Food pack / rations" },
+      { key: "pickupArea", label: "Preferred pickup area", kind: "select", options: [...COLLECTION_AREAS], required: true, showWhen: { field: "fulfilmentMethod", equals: "Collect from distribution point" }, showWhenSubtype: "Food pack / rations" },
       { key: "pickupTime", label: "Preferred pickup time (optional)", kind: "text", placeholder: "e.g. this afternoon", showWhen: { field: "fulfilmentMethod", equals: "Collect from distribution point" }, showWhenSubtype: "Food pack / rations" },
       // Either is okay — preferred area only (address is in Personal details).
-      { key: "generalPreferredArea", label: "Preferred area", kind: "select", options: [...AREAS], required: true, showWhen: { field: "fulfilmentMethod", equals: "Either is okay" }, showWhenSubtype: "Food pack / rations" },
+      { key: "generalPreferredArea", label: "Preferred area", kind: "select", options: [...COLLECTION_AREAS], required: true, showWhen: { field: "fulfilmentMethod", equals: "Either is okay" }, showWhenSubtype: "Food pack / rations" },
       { key: "timingConstraints", label: "Any timing constraints (optional)", kind: "text", placeholder: "e.g. before the weekend", showWhen: { field: "fulfilmentMethod", equals: "Either is okay" }, showWhenSubtype: "Food pack / rations" },
       // Restrictions
       {
@@ -367,13 +382,7 @@ export const supportTemplates: SupportTemplate[] = [
         required: true,
       },
       { key: "appointmentDateTime", label: "Appointment date & time", kind: "datetime", required: true },
-      {
-        key: "pickupArea",
-        label: "Pickup location",
-        kind: "select",
-        options: [...AREAS],
-        required: true,
-      },
+      // Pickup is the care recipient's home address — collected in Personal details (Step 3).
       { key: "wheelchairRequired", label: "Wheelchair required", kind: "toggle" },
       { key: "escortNeeded", label: "Escort needed", kind: "toggle" },
       { key: "caregiverAccompanying", label: "Caregiver accompanying", kind: "toggle" },
@@ -504,59 +513,10 @@ export interface Organisation {
 
 // --- cost estimate (computed for a task + chosen partner) ------------------
 
-export type CostType = "free" | "fixed" | "mixed" | "estimated" | "partnerReview";
-
-export interface CostBreakdownLine {
-  label: string;
-  quantity: number;
-  unitPrice?: number;
-  subtotal?: number;
-  min?: number;
-  max?: number;
-  costType: string;
-}
-
-export interface CostEstimate {
-  costType: CostType;
-  /** Optional display override for the cost chip (e.g. "Free / partner assessment"). */
-  label?: string;
-  /** Optional explanatory line shown beneath the chip (overrides the default). */
-  detail?: string;
-  min?: number;
-  max?: number;
-  total?: number;
-  currency: "SGD";
-  partnerConfirms: boolean;
-  paymentHandledBy?: "partner";
-  breakdown: CostBreakdownLine[];
-}
-
 // --- supply / food fulfilment routes ---------------------------------------
 // Supplies are episodic public-health distribution (not standing partners);
 // food is split by subtype to the real service that fulfils it.
-
-export type SupplyAvailabilityMode =
-  | "active_distribution_exercise"
-  | "local_stock_subject_to_availability"
-  | "partner_assessment"
-  | "unavailable";
-
-/** A per-item / per-subtype fulfilment route shown at review + submitted. */
-export interface FulfilmentRoute {
-  /** The supply item or food subtype this route fulfils. */
-  label: string;
-  quantity?: number;
-  routeName: string;
-  /** Logo path under /public; falls back to a letter. */
-  logo?: string;
-  /** Real partner-org id when the route is a service (food); absent for episodic exercises. */
-  organisationId?: string;
-  routeType: "public_distribution" | "community_distribution" | "partner_service";
-  availabilityMode: SupplyAvailabilityMode;
-  costLabel: string;
-  detail?: string;
-  status: string;
-}
+// (CostEstimate / FulfilmentRoute / SupplyAvailabilityMode now live in ./contract.)
 
 interface SupplyRoute {
   routeName: string;
@@ -929,46 +889,9 @@ export function getOrganisation(id: string): Organisation | undefined {
   return organisations.find((o) => o.id === id);
 }
 
-// --- final submitted request (consumed by Phase 4) ------------------------
-
-/**
- * Lifecycle status of a request / task, mirroring the community partner
- * dashboard. New submissions start "Pending"; partners later move them to
- * "Accepted" or "Rejected" (no backend yet, so only "Pending" surfaces).
- */
-export type RequestStatus = "Pending" | "Accepted" | "Rejected";
-
-export interface RequestTaskSession {
-  id: string;
-  supportType: SupportTypeId;
-  selectedSubtypes: string[];
-  details: Record<string, unknown>;
-  primaryOrganisationId: string;
-  fallbackOrganisationIds: string[];
-  /** Item/subtype-level routes (supplies + food); empty for single-partner types. */
-  fulfilmentRoutes?: FulfilmentRoute[];
-  costEstimate?: CostEstimate;
-  status: RequestStatus;
-}
-
-export interface RequestSession {
-  id: string;
-  careRecipientName: string;
-  caregiverName: string;
-  contactNumber: string;
-  contactMethod: string;
-  email?: string;
-  relationship?: string;
-  /** Location details (present only when the request collected them). */
-  generalArea?: string;
-  address?: string;
-  postalCode?: string;
-  accessNotes?: string;
-  linkedTopic: string;
-  createdAt: string;
-  overallStatus: RequestStatus;
-  tasks: RequestTaskSession[];
-}
+// --- final submitted request -----------------------------------------------
+// RequestStatus / RequestTaskSession / RequestSession now live in ./contract
+// (re-exported at the top of this file).
 
 /** Mock caregiver identity shared with partners (frontend prototype). */
 export const caregiver = {
