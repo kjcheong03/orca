@@ -155,13 +155,13 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
 
   // Paginate the active tab — up to PAGE_SIZE per page, with controls only when
   // there's more than one page. `safePage` clamps in case the list shrank under us.
-  const PAGE_SIZE = 6;
+  const PAGE_SIZE = 5;
   const totalPages = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
   const paged = shown.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-5rem-env(safe-area-inset-bottom))] w-full max-w-xl flex-col gap-5 px-4 pt-5 lg:h-[calc(100dvh-3.5rem)] lg:pt-8">
+    <div className="mx-auto flex min-h-[calc(100dvh-5rem-env(safe-area-inset-bottom))] w-full max-w-xl flex-col gap-5 px-4 pt-5 lg:min-h-[calc(100dvh-3.5rem)] lg:pt-8">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-3">
         <span className="-my-2 shrink-0">
@@ -207,7 +207,7 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
       {/* Requests — one encompassing card; the list scrolls inside it while the control
           row (tabs + pager) stays pinned. Labelled for screen readers since the visible
           "Your requests" heading is gone. */}
-      <section className="flex min-h-0 flex-1 flex-col rounded-[22px] bg-card p-4 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
+      <section className="flex flex-col rounded-[22px] bg-card p-4 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
         <p className="shrink-0 px-1 pb-2.5 text-[12px] font-bold uppercase tracking-wider text-faint">
           {tx("Your requests")}
         </p>
@@ -270,7 +270,7 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
         )}
 
         {loading ? (
-          <div className="mt-2.5 min-h-0 flex-1 space-y-2.5 overflow-hidden px-1 py-1">
+          <div className="mt-2.5 space-y-2.5 px-1 py-1">
             <div className="animate-pulse space-y-2.5">
               <SkeletonCard />
               <SkeletonCard />
@@ -278,7 +278,7 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
             </div>
           </div>
         ) : error ? (
-          <div className="fade-enter flex flex-1 flex-col items-center justify-center px-4 text-center">
+          <div className="fade-enter flex min-h-[220px] flex-col items-center justify-center px-4 text-center">
             <p className="text-[14px] font-semibold text-ink">{tx("Couldn't load your requests")}</p>
             <p className="mt-0.5 text-[12.5px] text-muted">{tx("Please check your connection and try again.")}</p>
             <button
@@ -290,18 +290,18 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
             </button>
           </div>
         ) : requests.length === 0 ? (
-          <div className="fade-enter flex flex-1 flex-col items-center justify-center px-4 text-center">
+          <div className="fade-enter flex min-h-[220px] flex-col items-center justify-center px-4 text-center">
             <p className="text-[14px] font-semibold text-ink">{tx("No active requests")}</p>
             <p className="mt-0.5 text-[12.5px] text-muted">{tx("Requests you submit will appear here.")}</p>
           </div>
         ) : shown.length === 0 ? (
-          <div className="fade-enter flex flex-1 flex-col items-center justify-center px-4 text-center">
+          <div className="fade-enter flex min-h-[160px] flex-col items-center justify-center px-4 text-center">
             <p className="text-[13px] text-muted">
               {tx(tab === "open" ? "No open requests." : "No closed requests.")}
             </p>
           </div>
         ) : (
-          <div className="fade-enter no-scrollbar mt-2.5 min-h-0 flex-1 space-y-2.5 overflow-y-auto px-1 py-1">
+          <div className="fade-enter mt-2.5 space-y-2.5 px-1 py-1">
                 {paged.map(({ req, t }) => (
                   <button
                     key={`${req.id}-${t.id}`}
