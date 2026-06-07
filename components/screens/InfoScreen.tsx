@@ -276,14 +276,22 @@ export default function InfoScreen() {
     const targets = activeProfile.matchedTargets ?? [];
     void loadTailoredGuidance(hazard, targets).then((rows) => {
       if (cancelled) return;
-      const mapped: TaggedGuidance[] = rows.map((r) => ({
-        id: `tg-${r.hazard}-${r.target}-${r.id}`,
-        source: r.source,
-        title: r.title,
-        url: r.url,
-        format: "Article",
-        targetTag: r.target,
-      }));
+      const reasonsMap = activeProfile.matchedTargetReasons ?? {};
+      const mapped: TaggedGuidance[] = rows.map((r) => {
+        // Show the specific patient condition that matched (e.g. "Type 2 Diabetes")
+        // rather than the controlled Target name (e.g. "Diabetes"). Fallback to
+        // the Target for profiles classified before matchedTargetReasons existed.
+        const reasons = reasonsMap[r.target] ?? [];
+        const tag = reasons[0] ?? r.target;
+        return {
+          id: `tg-${r.hazard}-${r.target}-${r.id}`,
+          source: r.source,
+          title: r.title,
+          url: r.url,
+          format: "Article",
+          targetTag: tag,
+        };
+      });
       setTailoredGuidance(mapped);
     });
     return () => {

@@ -5,7 +5,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, Megaphone, X } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { filterBroadcastsForProfile } from "@/lib/broadcasts";
-import { loadActiveProfile } from "@/lib/profiles";
+import { loadActiveProfile, type ElderProfile } from "@/lib/profiles";
+import type { Broadcast } from "@/lib/types";
 
 export default function BroadcastSheet() {
   const { broadcastOpen, closeBroadcast, t, tx, broadcasts, lang } = useApp();
@@ -75,6 +76,10 @@ export default function BroadcastSheet() {
             const open = expanded === b.id;
             // Show the caregiver's app-language version when available; else English.
             const content = lang !== "en" && b.translations?.[lang] ? b.translations[lang] : { title: b.title, body: b.body };
+            // Tailored pill: prefer the specific patient condition (e.g. "Type 2
+            // Diabetes") that caused the match over the controlled Target name.
+            // Falls back to URGENT for non-tailored high-urgency advisories.
+            const matchedCondition = matchedConditionForCard(b, activeProfile);
             return (
               <article
                 key={b.id}
@@ -91,14 +96,16 @@ export default function BroadcastSheet() {
                     <Megaphone size={18} className="text-white" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-2">
-                      <span className="display text-[16px] text-ink">{tx(content.title)}</span>
-                      {b.urgency === "HIGH" && (
-                        <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-700">
-                          {tx("Urgent")}
-                        </span>
-                      )}
-                    </span>
+                    {matchedCondition ? (
+                      <span className="mb-1 inline-flex items-center rounded-full bg-[#002C77]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#002C77]">
+                        {tx(matchedCondition)}
+                      </span>
+                    ) : b.urgency === "HIGH" ? (
+                      <span className="mb-1 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-700">
+                        {tx("Urgent")}
+                      </span>
+                    ) : null}
+                    <span className="display block text-[16px] text-ink">{tx(content.title)}</span>
                     <span className="mt-0.5 block text-[12px] text-faint">
                       {b.source} · {b.time}
                     </span>
@@ -132,6 +139,23 @@ export default function BroadcastSheet() {
       </div>
     </div>
   );
+}
+
+/** When the broadcast is tailored to the active profile (audienceMode==='selected'
+ *  with a targetProfiles overlap), return the FIRST original patient-condition
+ *  string that caused one of the targets to match — e.g. "Type 2 Diabetes"
+ *  rather than the controlled Target "Diabetes". Returns null when the
+ *  broadcast isn't tailored or the active profile has no reason recorded. */
+function matchedConditionForCard(broadcast: Broadcast, activeProfile: ElderProfile | null | undefined): string | null {
+  const targets = broadcast.targetProfiles ?? [];
+  const audience = broadcast.audienceMode ?? "all";
+  if (audience !== "selected" || targets.length === 0) return null;
+  const reasons = activeProfile?.matchedTargetReasons ?? {};
+  for (const t of targets) {
+    const rs = reasons[t] ?? [];
+    if (rs.length > 0) return rs[0];
+  }
+  return null;
 }
 
 /** Render inline markdown within a line: [label](url) links and **bold**. */

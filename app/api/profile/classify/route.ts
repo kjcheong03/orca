@@ -22,16 +22,29 @@ export async function POST(req: NextRequest) {
     : [];
 
   if (conditions.length === 0) {
-    return NextResponse.json({ matchedTargets: [] as string[] });
+    return NextResponse.json({
+      matchedTargets: [] as string[],
+      matchedTargetReasons: {} as Record<string, string[]>,
+    });
   }
 
   try {
     const result = await classifyConditions(conditions);
-    const targets = Array.from(new Set(result.map((r) => r.target)));
-    return NextResponse.json({ matchedTargets: targets });
+    const matchedTargets = Array.from(new Set(result.map((r) => r.target)));
+    const matchedTargetReasons: Record<string, string[]> = {};
+    for (const r of result) {
+      // dedup conditions per target
+      const seen = new Set(matchedTargetReasons[r.target] ?? []);
+      for (const c of r.conditions) seen.add(c);
+      matchedTargetReasons[r.target] = Array.from(seen);
+    }
+    return NextResponse.json({ matchedTargets, matchedTargetReasons });
   } catch (err) {
     // Permissive fallback — never block profile save on a classifier error.
     console.error("classify failed", err);
-    return NextResponse.json({ matchedTargets: [] as string[] });
+    return NextResponse.json({
+      matchedTargets: [] as string[],
+      matchedTargetReasons: {} as Record<string, string[]>,
+    });
   }
 }

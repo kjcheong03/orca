@@ -7,7 +7,7 @@
 // safer than stale-while-revalidate during active development — there's no
 // "saw the old code one more time after a redeploy" window.
 
-const CACHE = "orca-v4";
+const CACHE = "orca-v5";
 const OFFLINE_URL = "/";
 
 // --- Offline request outbox (Background Sync) ------------------------------

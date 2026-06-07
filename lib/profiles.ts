@@ -27,6 +27,10 @@ export interface ElderProfile {
    *  filter doesn't have to re-classify on every fetch. Empty array means
    *  classification hasn't run yet (or all conditions were unclassifiable). */
   matchedTargets?: string[];
+  /** Per-target original-condition strings that caused each Target to match.
+   *  Used to display the SPECIFIC patient condition (e.g. "Type 2 Diabetes")
+   *  on tailored cards instead of the controlled Target name ("Diabetes"). */
+  matchedTargetReasons?: Record<string, string[]>;
 }
 
 /** Combine the address parts into one display string. */
@@ -107,6 +111,7 @@ export function defaultProfiles(): ElderProfile[] {
       emergencyMedicine: patient.emergencyMedicine.map((m) => ({ ...m })),
       notes: [...DEFAULT_NOTES],
       matchedTargets: ["Heart", "Diabetes"],
+      matchedTargetReasons: { Heart: ["Hypertension"], Diabetes: ["Type 2 Diabetes"] },
     },
   ];
 }
@@ -217,6 +222,7 @@ export function blankProfile(id: string): ElderProfile {
     emergencyMedicine: [],
     notes: [],
     matchedTargets: [],
+    matchedTargetReasons: {},
   };
 }
 
@@ -236,10 +242,23 @@ export async function classifyAndSaveProfile(profile: ElderProfile): Promise<Eld
       body: JSON.stringify({ conditions: profile.conditions }),
     });
     if (!res.ok) return profile;
-    const data = (await res.json()) as { matchedTargets?: unknown };
+    const data = (await res.json()) as {
+      matchedTargets?: unknown;
+      matchedTargetReasons?: unknown;
+    };
     if (!Array.isArray(data.matchedTargets)) return profile;
     const matchedTargets = data.matchedTargets.filter((t): t is string => typeof t === "string");
-    return { ...profile, matchedTargets };
+    const rawReasons =
+      data.matchedTargetReasons && typeof data.matchedTargetReasons === "object" && !Array.isArray(data.matchedTargetReasons)
+        ? (data.matchedTargetReasons as Record<string, unknown>)
+        : {};
+    const matchedTargetReasons: Record<string, string[]> = {};
+    for (const [k, v] of Object.entries(rawReasons)) {
+      if (Array.isArray(v)) {
+        matchedTargetReasons[k] = v.filter((s): s is string => typeof s === "string");
+      }
+    }
+    return { ...profile, matchedTargets, matchedTargetReasons };
   } catch {
     return profile;
   }
