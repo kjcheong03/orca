@@ -3,8 +3,71 @@
 // cached fallback when offline); stale-while-revalidate for same-origin static
 // assets. API calls and cross-origin (Supabase media) always go to the network.
 
-const CACHE = "orca-v1";
+const CACHE = "orca-v2";
 const OFFLINE_URL = "/";
+
+// --- Offline request outbox (Background Sync) ------------------------------
+// Mirrors lib/requestQueue.ts. On the `sync` event (fired by the browser when
+// connectivity returns, Chromium only) we replay any queued help requests.
+// /api/requests is idempotent, so replaying a request can never duplicate it.
+const QUEUE_DB = "orca-offline";
+const QUEUE_STORE = "request-queue";
+const SYNC_TAG = "orca-flush-requests";
+
+function openQueueDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(QUEUE_DB, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(QUEUE_STORE)) {
+        db.createObjectStore(QUEUE_STORE, { keyPath: "id" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function flushQueuedRequests() {
+  let db;
+  try {
+    db = await openQueueDB();
+  } catch {
+    return;
+  }
+  const all = await new Promise((resolve) => {
+    const tx = db.transaction(QUEUE_STORE, "readonly");
+    const r = tx.objectStore(QUEUE_STORE).getAll();
+    r.onsuccess = () => resolve(r.result || []);
+    r.onerror = () => resolve([]);
+  });
+  for (const item of all) {
+    let res;
+    try {
+      res = await fetch("/api/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(item.session),
+      });
+    } catch {
+      break; // still offline — leave the rest queued for the next sync
+    }
+    // Retry later on transient errors (5xx/429/408); drop terminal 4xx so a bad
+    // item can't block the queue. Delete on success and on terminal failure.
+    const retryable = res.status >= 500 || res.status === 408 || res.status === 429;
+    if (!res.ok && retryable) break;
+    await new Promise((resolve) => {
+      const tx = db.transaction(QUEUE_STORE, "readwrite");
+      tx.objectStore(QUEUE_STORE).delete(item.id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    });
+  }
+}
+
+self.addEventListener("sync", (event) => {
+  if (event.tag === SYNC_TAG) event.waitUntil(flushQueuedRequests());
+});
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -37,8 +100,12 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(request, copy)).catch(() => {});
+          // Only cache a genuine, successful, same-origin page — never a 404/500
+          // or redirect, which would otherwise poison the offline shell.
+          if (res && res.ok && res.status === 200 && res.type === "basic" && !res.redirected) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(request, copy)).catch(() => {});
+          }
           return res;
         })
         .catch(() => caches.match(request).then((r) => r || caches.match(OFFLINE_URL)))

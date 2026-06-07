@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { Car, ChevronLeft, ChevronRight, Compass, HandHeart, HeartHandshake, Package, RefreshCw, UtensilsCrossed } from "lucide-react";
 import Mascot from "@/components/Mascot";
 import { useApp } from "@/context/AppContext";
+import { useOnline } from "@/lib/online";
+import { readCache, saveCache } from "@/lib/offlineCache";
+import { QUEUE_CHANGED_EVENT, queuedRequests } from "@/lib/requestQueue";
 import {
   getOrganisation,
   supportTypeLabels,
@@ -100,55 +103,120 @@ function partnersFor(task: RequestTaskSession): string {
 
 export default function CommunityHome({ onStart }: { onStart: (type?: SupportTypeId) => void }) {
   const { tx } = useApp();
+  const online = useOnline();
   const [requests, setRequests] = useState<RequestSession[]>([]);
+  // Requests submitted offline, waiting in the local outbox to be sent.
+  const [queued, setQueued] = useState<RequestSession[]>([]);
   const [open, setOpen] = useState<{ session: RequestSession; task: RequestTaskSession } | null>(null);
 
   const [tab, setTab] = useState<"open" | "closed">("open");
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [stale, setStale] = useState(false); // showing a cached list (offline)
   const [reloadKey, setReloadKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+
+  const loadQueued = useCallback(() => {
+    queuedRequests().then(setQueued).catch(() => {});
+  }, []);
 
   // Load the request log from Supabase (via the server route) after mount. `loading`
   // drives the ghost-card skeleton — we keep showing it for the whole load (however long)
   // and only ever render the empty state once a load genuinely succeeds with no rows. A
-  // failed load shows a retry, never a misleading "no requests".
+  // failed load offline falls back to the last-known cached list; a failed load with no
+  // cache shows a retry, never a misleading "no requests".
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError(false);
+    loadQueued();
     loadRequests()
       .then((r) => {
         if (!active) return;
         setRequests(r);
+        saveCache("requests", r); // keep a copy to view offline
+        setStale(false);
         setLoading(false);
       })
       .catch(() => {
         if (!active) return;
-        setError(true);
+        const cached = readCache<RequestSession[]>("requests");
+        if (cached?.data) {
+          setRequests(cached.data);
+          setStale(true);
+          setError(false);
+        } else {
+          setError(true);
+        }
         setLoading(false);
       });
     return () => {
       active = false;
     };
-  }, [reloadKey]);
+  }, [reloadKey, loadQueued]);
 
-  // In-place refresh: re-fetch without the full skeleton (the list stays, the icon spins).
-  // A transient failure keeps the current list rather than blanking it to an error.
-  const refresh = () => {
-    if (refreshing) return;
+  // In-place refresh: re-fetch without the full skeleton (the list stays, the icon
+  // spins). A ref guard (not the `refreshing` state) keeps this callback stable, so
+  // the effects below don't re-fire — and loop — when `refreshing` toggles. A
+  // mounted ref drops any state write that resolves after the user leaves the tab.
+  const refreshingRef = useRef(false);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
+
+  const reloadServer = useCallback(() => {
+    if (refreshingRef.current) return;
+    refreshingRef.current = true;
     setRefreshing(true);
+    loadQueued();
     loadRequests()
-      .then((r) => setRequests(r))
+      .then((r) => {
+        if (!mountedRef.current) return;
+        setRequests(r);
+        saveCache("requests", r);
+        setStale(false);
+      })
       .catch(() => {})
-      .finally(() => setRefreshing(false));
-  };
+      .finally(() => {
+        refreshingRef.current = false;
+        if (mountedRef.current) setRefreshing(false);
+      });
+  }, [loadQueued]);
+
+  // Refresh when the outbox changes: a new offline submission shows up right away,
+  // and once the shell flushes the queue on reconnect, the sent server copies
+  // replace the local "waiting to send" ones. (reloadServer also reloads the queue.)
+  useEffect(() => {
+    const onChange = () => reloadServer();
+    window.addEventListener(QUEUE_CHANGED_EVENT, onChange);
+    return () => window.removeEventListener(QUEUE_CHANGED_EVENT, onChange);
+  }, [reloadServer]);
+
+  // Refresh the list when the connection returns. The always-mounted shell owns
+  // the outbox flush (and flushQueue fires QUEUE_CHANGED for anything it sends);
+  // here we just re-pull the server list. Skip the initial mount to avoid a
+  // double fetch alongside the load effect above.
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    if (online) reloadServer();
+  }, [online, reloadServer]);
+
+  // Merge the offline outbox in front of the server list. A queued request that
+  // already exists on the server (just flushed) is dropped in favour of the
+  // server copy, so it never shows twice.
+  const serverIds = new Set(requests.map((r) => r.id));
+  const pendingOffline = queued.filter((q) => !serverIds.has(q.id));
+  const offlineIds = new Set(pendingOffline.map((r) => r.id));
+  const allRequests = [...pendingOffline, ...requests];
 
   // Flatten to per-task cards (newest sessions first from the API), then split by
   // lifecycle so open requests are easy to find. A card is "closed" once its effective
   // status is terminal (Completed / Rejected / Cancelled).
-  const cards = requests.flatMap((req) => req.tasks.map((t) => ({ req, t })));
+  const cards = allRequests.flatMap((req) => req.tasks.map((t) => ({ req, t })));
   const openCards = cards.filter(({ t }) => !isTerminalStatus(taskStatus(t)));
   const closedCards = cards.filter(({ t }) => isTerminalStatus(taskStatus(t)));
   const shown = tab === "open" ? openCards : closedCards;
@@ -208,12 +276,17 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
           row (tabs + pager) stays pinned. Labelled for screen readers since the visible
           "Your requests" heading is gone. */}
       <section className="flex flex-col rounded-[22px] bg-card p-4 shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
-        <p className="shrink-0 px-1 pb-2.5 text-[12px] font-bold uppercase tracking-wider text-faint">
-          {tx("Your requests")}
-        </p>
+        <div className="flex shrink-0 items-center justify-between gap-2 px-1 pb-2.5">
+          <p className="text-[12px] font-bold uppercase tracking-wider text-faint">
+            {tx("Your requests")}
+          </p>
+          {stale && (
+            <span className="text-[11px] font-medium text-faint">{tx("Offline · saved copy")}</span>
+          )}
+        </div>
 
         {/* Control row — Open/Closed on the left; compact pager on the right (>1 page) */}
-        {!loading && !error && requests.length > 0 && (
+        {!loading && allRequests.length > 0 && (
           <div className="flex shrink-0 items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-1">
               <SegmentedToggle<"open" | "closed">
@@ -232,7 +305,7 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
               />
               <button
                 type="button"
-                onClick={refresh}
+                onClick={reloadServer}
                 disabled={refreshing}
                 aria-label={tx("Refresh")}
                 title={tx("Refresh")}
@@ -277,7 +350,7 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
               <SkeletonCard />
             </div>
           </div>
-        ) : error ? (
+        ) : error && allRequests.length === 0 ? (
           <div className="fade-enter flex min-h-[220px] flex-col items-center justify-center px-4 text-center">
             <p className="text-[14px] font-semibold text-ink">{tx("Couldn't load your requests")}</p>
             <p className="mt-0.5 text-[12.5px] text-muted">{tx("Please check your connection and try again.")}</p>
@@ -289,7 +362,7 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
               {tx("Try again")}
             </button>
           </div>
-        ) : requests.length === 0 ? (
+        ) : allRequests.length === 0 ? (
           <div className="fade-enter flex min-h-[220px] flex-col items-center justify-center px-4 text-center">
             <p className="text-[14px] font-semibold text-ink">{tx("No active requests")}</p>
             <p className="mt-0.5 text-[12.5px] text-muted">{tx("Requests you submit will appear here.")}</p>
@@ -311,7 +384,13 @@ export default function CommunityHome({ onStart }: { onStart: (type?: SupportTyp
                   >
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-[14px] font-bold text-ink">{tx(supportTypeLabels[t.supportType])}</p>
-                      <TaskHeaderBadge task={t} />
+                      {offlineIds.has(req.id) ? (
+                        <span className="shrink-0 rounded-full bg-warn/20 px-2.5 py-1 text-[11.5px] font-semibold text-[#8a5a00]">
+                          {tx("Waiting to send")}
+                        </span>
+                      ) : (
+                        <TaskHeaderBadge task={t} />
+                      )}
                     </div>
                     {isRouteBased(t) && t.fulfilmentRoutes?.length ? (
                       <div className="mt-1.5 space-y-1">

@@ -5,6 +5,7 @@ import { Loader2, Mic, Send, Square, Volume2, X } from "lucide-react";
 import Mascot from "@/components/Mascot";
 import VideoResource from "@/components/VideoResource";
 import { useApp } from "@/context/AppContext";
+import { useOnline, isOffline } from "@/lib/online";
 import { patient } from "@/lib/data";
 import { findVideo } from "@/lib/media";
 import type { Hazard } from "@/lib/scenario";
@@ -30,6 +31,7 @@ type Ui = {
   voiceNote: string;
   error: string;
   micError: string;
+  offline: string;
   prompts: Record<Hazard, string[]>;
 };
 
@@ -44,6 +46,7 @@ const CHAT_UI: Record<Language, Ui> = {
     voiceNote: "AI assistant · voice is AI-generated",
     error: "Sorry, something went wrong. Please try again.",
     micError: "I couldn't access the microphone.",
+    offline: "I can't answer right now — I need an internet connection. Emergency info and contacts still work offline.",
     prompts: {
       covid: ["What should I watch for?", "Is it safe for her to go out?", "How do I use a test kit?"],
       dengue: ["What should I watch for tonight?", "What if she gets a fever?", "How do I reduce mosquito bites?"],
@@ -59,6 +62,7 @@ const CHAT_UI: Record<Language, Ui> = {
     voiceNote: "Asisten AI · suara dihasilkan AI",
     error: "Maaf, terjadi kesalahan. Coba lagi.",
     micError: "Tidak bisa mengakses mikrofon.",
+    offline: "Saya tidak dapat menjawab sekarang — perlu koneksi internet. Info darurat dan kontak tetap berfungsi offline.",
     prompts: {
       covid: ["Apa yang harus saya waspadai?", "Apakah aman dia keluar rumah?", "Bagaimana cara pakai alat tes?"],
       dengue: ["Apa yang harus diwaspadai malam ini?", "Bagaimana jika dia demam?", "Bagaimana mengurangi gigitan nyamuk?"],
@@ -74,6 +78,7 @@ const CHAT_UI: Record<Language, Ui> = {
     voiceNote: "Pembantu AI · suara dijana AI",
     error: "Maaf, ada masalah. Cuba lagi.",
     micError: "Tidak dapat mengakses mikrofon.",
+    offline: "Saya tidak dapat menjawab sekarang — perlukan sambungan internet. Maklumat kecemasan dan kenalan masih berfungsi di luar talian.",
     prompts: {
       covid: ["Apa yang perlu saya perhati?", "Selamatkah dia keluar rumah?", "Bagaimana guna kit ujian?"],
       dengue: ["Apa perlu diperhati malam ini?", "Bagaimana jika dia demam?", "Bagaimana kurangkan gigitan nyamuk?"],
@@ -89,6 +94,7 @@ const CHAT_UI: Record<Language, Ui> = {
     voiceNote: "AI assistant · AI ang boses",
     error: "Paumanhin, may problema. Subukan ulit.",
     micError: "Hindi ma-access ang mikropono.",
+    offline: "Hindi po ako makasagot ngayon — kailangan ko ng internet. Gumagana pa rin offline ang emergency info at mga contact.",
     prompts: {
       covid: ["Ano po ang dapat bantayan?", "Ligtas po bang lumabas siya?", "Paano po gamitin ang test kit?"],
       dengue: ["Ano po ang bantayan ngayong gabi?", "Paano po kung magka-lagnat siya?", "Paano po bawasan ang kagat ng lamok?"],
@@ -104,6 +110,7 @@ const CHAT_UI: Record<Language, Ui> = {
     voiceNote: "AI 助手 · 语音由 AI 生成",
     error: "抱歉，出错了，请再试一次。",
     micError: "无法访问麦克风。",
+    offline: "我现在无法回答——需要网络连接。紧急信息和联系人在离线时仍可使用。",
     prompts: {
       covid: ["我该注意什么？", "她出门安全吗？", "检测试剂盒怎么用？"],
       dengue: ["今晚我该注意什么？", "如果她发烧怎么办？", "如何减少蚊虫叮咬？"],
@@ -119,6 +126,7 @@ const CHAT_UI: Record<Language, Ui> = {
     voiceNote: "AI လက်ထောက် · အသံကို AI ဖြင့်ထုတ်သည်",
     error: "ဆောရီးပါ၊ တစ်ခုခု မှားသွားပါသည်။ ထပ်ကြိုးစားပါ။",
     micError: "မိုက်ခရိုဖုန်းကို အသုံးမပြုနိုင်ပါ။",
+    offline: "ယခု ဖြေဆိုနိုင်ခြင်း မရှိပါ — အင်တာနက် ချိတ်ဆက်မှု လိုအပ်သည်။ အရေးပေါ်အချက်အလက်နှင့် အဆက်အသွယ်များကို အော့ဖ်လိုင်းတွင် ဆက်သုံးနိုင်ပါသည်။",
     prompts: {
       covid: ["ဘာတွေ သတိထားရမလဲ?", "သူ အပြင်ထွက်ရင် အန္တရာယ်ရှိမလား?", "စစ်ဆေးကိရိယာ ဘယ်လိုသုံးရမလဲ?"],
       dengue: ["ဒီည ဘာတွေ သတိထားရမလဲ?", "သူ ဖျားလာရင် ဘယ်လိုလုပ်ရမလဲ?", "ခြင်ကိုက်ခံရတာ ဘယ်လိုလျှော့ချမလဲ?"],
@@ -138,6 +146,7 @@ export default function AskOrcaChat({
   date: string;
 }) {
   const { lang } = useApp();
+  const online = useOnline();
   const ui = CHAT_UI[lang];
 
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -190,6 +199,14 @@ export default function AskOrcaChat({
     const history = [...messages, { role: "user" as const, text: q }];
     setMessages(history);
     setInput("");
+
+    // Offline: ORCA's replies need the network. Answer locally with a clear
+    // note rather than firing a request that will just fail.
+    if (isOffline()) {
+      setMessages((m) => [...m, { role: "orca", text: ui.offline }]);
+      return;
+    }
+
     setSending(true);
 
     try {
@@ -353,7 +370,8 @@ export default function AskOrcaChat({
                         onClick={() => speak(i, m.text)}
                         aria-label={ui.readAloud}
                         title={ui.readAloud}
-                        className="flex items-center gap-1 rounded-full px-1.5 py-0.5 text-faint transition-colors hover:text-brand"
+                        disabled={!online}
+                        className="flex items-center gap-1 rounded-full px-1.5 py-0.5 text-faint transition-colors hover:text-brand disabled:opacity-40 disabled:hover:text-faint"
                       >
                         {ttsLoadingIdx === i ? (
                           <Loader2 size={15} className="animate-spin" />
@@ -435,7 +453,8 @@ export default function AskOrcaChat({
               type="button"
               onClick={recording ? stopRecording : startRecording}
               aria-label={recording ? "Stop recording" : "Record voice"}
-              disabled={transcribing}
+              disabled={transcribing || !online}
+              title={!online ? ui.offline : undefined}
               className={`grid h-10 w-10 shrink-0 place-items-center rounded-full transition-transform active:scale-95 disabled:opacity-40 ${
                 recording ? "animate-pulse bg-danger text-white" : "bg-brand text-white"
               }`}

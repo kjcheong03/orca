@@ -6,7 +6,7 @@ import { matchPartners, routeRequest, type MatchResult } from "@/lib/matching";
 import { calculateTaskCost, formatCostEstimate } from "@/lib/cost";
 import { useApp } from "@/context/AppContext";
 import { type ContactInfo } from "@/components/community/ContactDetails";
-import { persistRequest } from "@/lib/requestStore";
+import { persistRequest, type SubmitResult } from "@/lib/requestStore";
 import { requestRef } from "@/lib/contract";
 import {
   getOrganisation,
@@ -178,6 +178,7 @@ export default function ReviewMatch({
   const [costAck, setCostAck] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [submitted, setSubmitted] = useState<RequestSession | null>(null);
+  const [submitResult, setSubmitResult] = useState<SubmitResult>("sent");
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Stable id generated once per review submission (not inside submit, which can
   // re-run). Doubles as the server idempotency key so a retry can't create a dupe.
@@ -270,7 +271,7 @@ export default function ReviewMatch({
       }),
     };
     try {
-      await persistRequest(session);
+      setSubmitResult(await persistRequest(session));
     } catch {
       // keep the success UX in this prototype even if the write hiccups
     }
@@ -282,18 +283,26 @@ export default function ReviewMatch({
   // --- success state ---
   if (submitted) {
     const reqWord = tx(submitted.tasks.length === 1 ? "request" : "requests");
+    const queued = submitResult === "queued";
     return (
       <div className="space-y-5">
         <div className="rounded-[24px] bg-card p-6 text-center shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
           <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#e6f5ee] text-[#147a4f]">
             <Check size={28} strokeWidth={3} />
           </span>
-          <h2 className="display mt-3 text-[20px] text-ink">{tx("Request sent")}</h2>
+          <h2 className="display mt-3 text-[20px] text-ink">
+            {tx(queued ? "Request saved" : "Request sent")}
+          </h2>
           <p className="mt-2.5 text-[13.5px] leading-relaxed text-muted">
-            {txf(
-              "ORCA has sent your {req} to the selected partners and active distribution channels. They'll reach out via your chosen contact method.",
-              { req: reqWord },
-            )}
+            {queued
+              ? txf(
+                  "You're offline. ORCA has saved your {req} and will send it automatically when you're back online.",
+                  { req: reqWord },
+                )
+              : txf(
+                  "ORCA has sent your {req} to the selected partners and active distribution channels. They'll reach out via your chosen contact method.",
+                  { req: reqWord },
+                )}
           </p>
           <p className="mt-3 inline-flex items-center rounded-full bg-app px-3 py-1.5 text-[12.5px] font-semibold text-body">
             Reference&nbsp;<span className="text-ink">{requestRef(submitted.id)}</span>

@@ -63,3 +63,46 @@ your own:
 ```
 NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_public_token
 ```
+
+---
+
+## Offline support (PWA)
+
+ORCA installs to the home screen and keeps working without a connection. The rule
+is simple: **on-device and native things keep working; network/AI things degrade
+gracefully.**
+
+**Works offline**
+
+- The whole app shell, all bundled situation data, and the care profile, emergency
+  contacts, one-tap **call 995**, and **SMS alert** (composing + sending are native).
+- A persistent **"You're offline"** banner so the caregiver knows live features are
+  paused.
+- The dengue map falls back from live Mapbox tiles to a tile-free **SVG cluster
+  map** (the cluster data is bundled).
+- **Last-known** authority broadcasts and AI "today" suggestions are cached and
+  shown (labelled as saved), instead of going blank.
+- Community help requests submitted offline are saved to a local **outbox**
+  ("Waiting to send") and **auto-sent when the connection returns** — safe to replay
+  because `/api/requests` is idempotent on the request id. On Chromium this also uses
+  Background Sync; elsewhere (e.g. iOS) it flushes on reconnect / next open.
+
+**Degrades when offline** (needs the network, shown disabled with a clear note):
+Ask ORCA chat, voice transcription, alert translation, text-to-speech, OneMap
+postal lookup (you can still type the address), and live Mapbox tiles.
+
+**Caveats** (inherent to PWAs)
+
+- **The first visit must be online** — the service worker can only serve what it has
+  cached at least once.
+- After a **redeploy**, do a fresh online load before relying on offline again, and
+  bump `CACHE` in [`public/sw.js`](public/sw.js) so clients pick up the new build.
+- The service worker only registers in a **production** build (`npm run build &&
+  npm start`), not `npm run dev`. To test offline in another mode, set
+  `NEXT_PUBLIC_ENABLE_SW=1` at build time.
+
+**Validating it** — with a production server running on `:3000`:
+
+```bash
+node scripts/offline-check.mjs   # drives a real browser offline and asserts the above
+```

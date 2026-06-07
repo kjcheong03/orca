@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Loader2 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { isOffline } from "@/lib/online";
 
 export interface AddressValue {
   postalCode?: string;
@@ -59,13 +60,18 @@ export default function AddressFields({
   labelClass?: string;
 }) {
   const { tx } = useApp();
-  const [lookup, setLookup] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [lookup, setLookup] = useState<"idle" | "loading" | "done" | "error" | "offline">("idle");
 
   const onPostal = async (raw: string) => {
     const postal = raw.replace(/\D/g, "").slice(0, 6);
     onChange({ postalCode: postal });
     if (postal.length !== 6) {
       setLookup("idle");
+      return;
+    }
+    // Offline: the OneMap lookup can't run. Let the user type the street in.
+    if (isOffline()) {
+      setLookup("offline");
       return;
     }
     setLookup("loading");
@@ -152,6 +158,10 @@ export default function AddressFields({
       {lookup === "error" ? (
         <p className="text-[12px] font-medium text-danger">
           {tx("Couldn't find that postal code — please enter your block & street above.")}
+        </p>
+      ) : lookup === "offline" ? (
+        <p className="text-[12px] font-medium text-faint">
+          {tx("You're offline — please enter your block & street above.")}
         </p>
       ) : error ? (
         <p className="text-[12px] font-medium text-danger">{error}</p>

@@ -12,6 +12,7 @@ import { translate } from "@/lib/i18n";
 import { tx as txAuto, txf as txfAuto } from "@/lib/i18n/auto";
 import { broadcasts as seedBroadcasts } from "@/lib/data";
 import { loadBroadcasts } from "@/lib/broadcasts";
+import { readCache, saveCache } from "@/lib/offlineCache";
 import type { Broadcast, Language } from "@/lib/types";
 
 export type Tab = "info" | "support" | "contacts" | "profile";
@@ -66,10 +67,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     let active = true;
     loadBroadcasts()
       .then((fetched) => {
-        if (active) setBroadcasts(fetched);
+        if (!active) return;
+        setBroadcasts(fetched);
+        saveCache("broadcasts", fetched); // keep a copy for offline reloads
       })
       .catch(() => {
-        if (active) setBroadcasts(seedBroadcasts);
+        if (!active) return;
+        // Fetch failed (often offline). Prefer the last-known broadcasts we
+        // cached; only fall back to the bundled seed copy if there's no cache.
+        const cached = readCache<Broadcast[]>("broadcasts");
+        setBroadcasts(cached?.data?.length ? cached.data : seedBroadcasts);
       });
     return () => {
       active = false;

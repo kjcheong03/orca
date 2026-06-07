@@ -1,14 +1,17 @@
 "use client";
 
+import { useEffect } from "react";
 import BottomNav from "@/components/BottomNav";
 import BroadcastSheet from "@/components/BroadcastSheet";
 import LanguagePicker from "@/components/LanguagePicker";
+import OfflineBanner from "@/components/OfflineBanner";
 import Sidebar from "@/components/Sidebar";
 import ContactsScreen from "@/components/screens/ContactsScreen";
 import InfoScreen from "@/components/screens/InfoScreen";
 import ProfileScreen from "@/components/screens/ProfileScreen";
 import SupportScreen from "@/components/screens/SupportScreen";
 import { AppProvider, useApp, type Tab } from "@/context/AppContext";
+import { flushQueue } from "@/lib/requestQueue";
 
 const screens: { tab: Tab; Component: () => React.ReactNode }[] = [
   { tab: "info", Component: InfoScreen },
@@ -19,6 +22,16 @@ const screens: { tab: Tab; Component: () => React.ReactNode }[] = [
 
 function Shell() {
   const { tab } = useApp();
+
+  // Flush any requests submitted while offline — on first load and whenever the
+  // connection returns. The shell is always mounted, so queued requests get
+  // sent even if the user never opens the Community tab. (Replay is idempotent.)
+  useEffect(() => {
+    void flushQueue();
+    const onOnline = () => void flushQueue();
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, []);
 
   return (
     <div className="min-h-[100dvh] bg-app">
@@ -42,6 +55,7 @@ function Shell() {
       {/* Overlays cover the whole viewport */}
       <BroadcastSheet />
       <LanguagePicker />
+      <OfflineBanner />
     </div>
   );
 }

@@ -25,6 +25,78 @@ export const chrome: Dict = {
   Change: { id: "Ubah", ms: "Tukar", tl: "Palitan", zh: "更改", my: "ပြောင်းရန်" },
   Yes: { id: "Ya", ms: "Ya", tl: "Oo", zh: "是", my: "ဟုတ်ကဲ့" },
 
+  // --- offline / connectivity ---
+  "You're offline — emergency info and contacts still work.": {
+    id: "Anda sedang offline — info darurat dan kontak tetap berfungsi.",
+    ms: "Anda di luar talian — maklumat kecemasan dan kenalan masih berfungsi.",
+    tl: "Offline ka — gumagana pa rin ang emergency info at mga contact.",
+    zh: "您已离线——紧急信息和联系人仍可使用。",
+    my: "သင် အော့ဖ်လိုင်းဖြစ်နေသည် — အရေးပေါ်အချက်အလက်နှင့် အဆက်အသွယ်များ ဆက်အသုံးပြုနိုင်သည်။",
+  },
+  "Offline · showing saved tips": {
+    id: "Offline · menampilkan tips tersimpan",
+    ms: "Luar talian · menunjukkan petua tersimpan",
+    tl: "Offline · ipinapakita ang mga naka-save na tip",
+    zh: "离线 · 显示已保存的建议",
+    my: "အော့ဖ်လိုင်း · သိမ်းထားသော အကြံပြုချက်များ ပြသနေသည်",
+  },
+  "Offline · showing general tips": {
+    id: "Offline · menampilkan tips umum",
+    ms: "Luar talian · menunjukkan petua umum",
+    tl: "Offline · ipinapakita ang mga pangkalahatang tip",
+    zh: "离线 · 显示一般建议",
+    my: "အော့ဖ်လိုင်း · ယေဘုယျ အကြံပြုချက်များ ပြသနေသည်",
+  },
+  "Voice needs a connection": {
+    id: "Suara perlu koneksi",
+    ms: "Suara perlukan sambungan",
+    tl: "Kailangan ng koneksyon ang boses",
+    zh: "语音需要网络连接",
+    my: "အသံအတွက် ချိတ်ဆက်မှု လိုအပ်သည်",
+  },
+  "needs a connection": {
+    id: "perlu koneksi",
+    ms: "perlukan sambungan",
+    tl: "kailangan ng koneksyon",
+    zh: "需要网络连接",
+    my: "ချိတ်ဆက်မှု လိုအပ်သည်",
+  },
+  "You're offline — please enter your block & street above.": {
+    id: "Anda sedang offline — silakan masukkan blok & jalan di atas.",
+    ms: "Anda di luar talian — sila masukkan blok & jalan di atas.",
+    tl: "Offline ka — pakilagay ang block at kalye sa itaas.",
+    zh: "您已离线——请在上方输入门牌号和街道。",
+    my: "သင် အော့ဖ်လိုင်းဖြစ်နေသည် — အထက်တွင် block နှင့် လမ်းကို ထည့်ပါ။",
+  },
+  "Waiting to send": {
+    id: "Menunggu dikirim",
+    ms: "Menunggu untuk dihantar",
+    tl: "Naghihintay na maipadala",
+    zh: "等待发送",
+    my: "ပို့ရန် စောင့်ဆိုင်းနေသည်",
+  },
+  "Offline · saved copy": {
+    id: "Offline · salinan tersimpan",
+    ms: "Luar talian · salinan tersimpan",
+    tl: "Offline · naka-save na kopya",
+    zh: "离线 · 已保存副本",
+    my: "အော့ဖ်လိုင်း · သိမ်းထားသော မိတ္တူ",
+  },
+  "Request saved": {
+    id: "Permintaan disimpan",
+    ms: "Permintaan disimpan",
+    tl: "Na-save ang kahilingan",
+    zh: "请求已保存",
+    my: "တောင်းဆိုမှု သိမ်းဆည်းပြီး",
+  },
+  "You're offline. ORCA has saved your {req} and will send it automatically when you're back online.": {
+    id: "Anda sedang offline. ORCA telah menyimpan {req} Anda dan akan mengirimnya otomatis saat Anda kembali online.",
+    ms: "Anda di luar talian. ORCA telah menyimpan {req} anda dan akan menghantarnya secara automatik apabila anda kembali dalam talian.",
+    tl: "Offline ka. Na-save ng ORCA ang iyong {req} at awtomatiko itong ipadadala kapag bumalik ka online.",
+    zh: "您已离线。ORCA 已保存您的{req}，并会在您恢复联网后自动发送。",
+    my: "သင် အော့ဖ်လိုင်းဖြစ်နေသည်။ ORCA သည် သင်၏ {req} ကို သိမ်းဆည်းထားပြီး အွန်လိုင်းပြန်ရောက်သည်နှင့် အလိုအလျောက် ပို့ပေးပါမည်။",
+  },
+
   // --- Info screen ---
   "For {name} today": { id: "Untuk {name} hari ini", ms: "Untuk {name} hari ini", tl: "Para kay {name} ngayon", zh: "今天为{name}", my: "ယနေ့ {name} အတွက်" },
   "ORCA tailors these to {name}'s age and conditions. Detailed reasoning is a work in progress.": {

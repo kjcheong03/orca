@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { SolidPhone } from "@/components/glyphs";
 import { useApp } from "@/context/AppContext";
+import { useOnline } from "@/lib/online";
 import { ambulance, contacts } from "@/lib/data";
 import { defaultProfiles, loadActiveProfile, type ElderProfile } from "@/lib/profiles";
 import type { Contact } from "@/lib/types";
@@ -39,6 +40,7 @@ function initialsOf(name: string): string {
 
 export default function ContactsScreen() {
   const { t, tx, lang, tab } = useApp();
+  const online = useOnline();
   const [list, setList] = useState<Contact[]>(contacts);
   const [formMode, setFormMode] = useState<{ type: "add" } | { type: "edit"; contact: Contact } | null>(null);
   const [actionsFor, setActionsFor] = useState<Contact | null>(null);
@@ -239,8 +241,9 @@ export default function ContactsScreen() {
                       <button
                         type="button"
                         onClick={recording ? stopRecording : startRecording}
-                        disabled={transcribing}
+                        disabled={transcribing || !online}
                         aria-label={recording ? tx("Stop recording") : tx("Record voice message")}
+                        title={!online ? tx("Voice needs a connection") : undefined}
                         className={`grid h-9 w-9 place-items-center rounded-full transition-transform active:scale-95 disabled:opacity-50 ${
                           recording ? "animate-pulse bg-danger text-white" : "bg-app text-brand"
                         }`}
@@ -393,6 +396,7 @@ function AlertSendSheet({
   onClose: () => void;
 }) {
   const { tx, txf, lang } = useApp();
+  const online = useOnline();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [withCard, setWithCard] = useState(false);
   const [translateOn, setTranslateOn] = useState(false);
@@ -409,7 +413,7 @@ function AlertSendSheet({
   // Only translate when the toggle is on and the chosen language differs from
   // the compose language — otherwise there's nothing to translate.
   useEffect(() => {
-    if (!translateOn || targetCode === lang || !alertText.trim()) {
+    if (!translateOn || !online || targetCode === lang || !alertText.trim()) {
       setTranslated(null);
       setTranslating(false);
       return;
@@ -428,7 +432,7 @@ function AlertSendSheet({
     return () => {
       cancelled = true;
     };
-  }, [translateOn, targetCode, alertText, lang]);
+  }, [translateOn, targetCode, alertText, lang, online]);
 
   const toggle = (id: string) =>
     setSelected((s) => {
@@ -441,7 +445,7 @@ function AlertSendSheet({
   const toggleAll = () => setSelected(allOn ? new Set() : new Set(contacts.map((c) => c.id)));
 
   const outText =
-    translateOn && targetCode !== lang ? (translated ?? alertText.trim()) : alertText.trim();
+    translateOn && online && targetCode !== lang ? (translated ?? alertText.trim()) : alertText.trim();
   const chosen = contacts.filter((c) => selected.has(c.id));
   const numbers = chosen.map((c) => c.phone.replace(/\s/g, "")).join(",");
   const body = `${outText}${withCard ? `\n\n${cardDetails}` : ""}`;
@@ -504,18 +508,26 @@ function AlertSendSheet({
             <button
               type="button"
               onClick={() => setTranslateOn((v) => !v)}
-              aria-pressed={translateOn}
-              className="flex w-full items-center gap-3 px-1 py-2 text-left"
+              aria-pressed={translateOn && online}
+              disabled={!online}
+              className="flex w-full items-center gap-3 px-1 py-2 text-left disabled:opacity-50"
             >
               <Languages size={18} className="shrink-0 text-brand" />
-              <span className="flex-1 text-[14px] font-semibold text-ink">{tx("Translate message")}</span>
-              <Switch on={translateOn} />
+              <span className="flex-1 text-[14px] font-semibold text-ink">
+                {tx("Translate message")}
+                {!online && (
+                  <span className="ml-1 text-[12px] font-medium text-faint">
+                    · {tx("needs a connection")}
+                  </span>
+                )}
+              </span>
+              <Switch on={translateOn && online} />
             </button>
           </div>
         </div>
 
         {/* Recipient language + translated preview — only when translating */}
-        {translateOn && (
+        {translateOn && online && (
         <div className="border-t border-black/[0.06] px-5 pt-3">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[12px] font-bold uppercase tracking-wider text-faint">{tx("Send in")}</span>
