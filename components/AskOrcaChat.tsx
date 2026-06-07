@@ -320,15 +320,16 @@ export default function AskOrcaChat({
     const history = [...messages, { role: "user" as const, text: q }];
     setMessages(history);
     setInput("");
-    setDailyCount(bumpDailyCount()); // count this send toward today's limit
 
     // Offline: ORCA's replies need the network. Answer locally with a clear
-    // note rather than firing a request that will just fail.
+    // note rather than firing a request that will just fail. This does NOT use
+    // the AI, so it doesn't count toward today's limit.
     if (isOffline()) {
       setMessages((m) => [...m, { role: "orca", text: ui.offline }]);
       return;
     }
 
+    setDailyCount(bumpDailyCount()); // count only real (online) AI sends
     setSending(true);
 
     try {
