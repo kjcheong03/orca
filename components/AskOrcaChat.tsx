@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Mic, Send, Square, Volume2, X } from "lucide-react";
+import { Loader2, Mic, RotateCcw, Send, Square, Volume2, X } from "lucide-react";
 import Mascot from "@/components/Mascot";
 import VideoResource from "@/components/VideoResource";
 import { SolidPhone } from "@/components/glyphs";
@@ -139,6 +139,83 @@ const CHAT_UI: Record<Language, Ui> = {
   },
 };
 
+// --- Local persistence + usage limits ------------------------------------
+// The conversation lives ONLY in the browser (localStorage) — never sent to a
+// server for storage; messages are sent to /api/chat solely to get a reply.
+const CONVO_KEY = "orca-chat-convo";
+const DAILY_KEY = "orca-chat-daily";
+const DAILY_LIMIT = 20; // messages YOU can send per day (replies don't count)
+const CONVO_LIMIT = 30; // your messages kept in one conversation before it's full
+
+function dayKey(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
+function loadConvo(): Msg[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(CONVO_KEY);
+    const arr = raw ? (JSON.parse(raw) as Msg[]) : null;
+    return Array.isArray(arr) && arr.length ? arr : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveConvo(messages: Msg[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(CONVO_KEY, JSON.stringify(messages));
+  } catch {
+    /* quota / unavailable — best-effort */
+  }
+}
+
+function clearConvoStore(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(CONVO_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Messages YOU have sent today (resets at local midnight). */
+function loadDailyCount(): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    const raw = window.localStorage.getItem(DAILY_KEY);
+    if (!raw) return 0;
+    const o = JSON.parse(raw) as { date?: string; count?: number };
+    return o.date === dayKey() ? o.count ?? 0 : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function bumpDailyCount(): number {
+  const next = loadDailyCount() + 1;
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(DAILY_KEY, JSON.stringify({ date: dayKey(), count: next }));
+    } catch {
+      /* ignore */
+    }
+  }
+  return next;
+}
+
+/** Human "5h 24m" / "24m" until local midnight (when the daily count resets). */
+function timeUntilReset(): string {
+  const now = new Date();
+  const mid = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+  const mins = Math.max(0, Math.round((mid.getTime() - now.getTime()) / 60000));
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
 export default function AskOrcaChat({
   open,
   onClose,
@@ -164,18 +241,40 @@ export default function AskOrcaChat({
   const [transcribing, setTranscribing] = useState(false);
   const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);
   const [ttsLoadingIdx, setTtsLoadingIdx] = useState<number | null>(null);
+  const [dailyCount, setDailyCount] = useState(0);
+  const [, setTick] = useState(0); // re-render so the reset countdown stays current
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
+  const hydratedRef = useRef(false);
 
-  // Greet fresh each time the panel opens, in the active language.
+  // Hydrate the conversation + today's count from localStorage once on mount.
+  // The conversation persists (it is NOT reset when the panel reopens).
+  useEffect(() => {
+    const saved = loadConvo();
+    setMessages(saved ?? [{ role: "orca", text: ui.greeting(shortName) }]);
+    setDailyCount(loadDailyCount());
+    hydratedRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist the conversation locally whenever it changes.
+  useEffect(() => {
+    if (!hydratedRef.current || messages.length === 0) return;
+    saveConvo(messages);
+  }, [messages]);
+
+  // While open, refresh today's count (midnight rollover / other tabs) and tick
+  // the reset countdown every minute.
   useEffect(() => {
     if (!open) return;
-    setMessages([{ role: "orca", text: ui.greeting(shortName) }]);
-    setInput("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setDailyCount(loadDailyCount());
+    // Jump to the latest message when reopening a saved conversation.
+    requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }));
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
   }, [open]);
 
   useEffect(() => {
@@ -213,11 +312,15 @@ export default function AskOrcaChat({
   async function send(text: string) {
     const q = text.trim();
     if (!q || sending) return;
+    // Usage limits (guards; the UI also disables input when these are hit).
+    if (dailyCount >= DAILY_LIMIT) return; // daily cap
+    if (messages.filter((m) => m.role === "user").length >= CONVO_LIMIT) return; // conversation full
     stopSpeaking();
 
     const history = [...messages, { role: "user" as const, text: q }];
     setMessages(history);
     setInput("");
+    setDailyCount(bumpDailyCount()); // count this send toward today's limit
 
     // Offline: ORCA's replies need the network. Answer locally with a clear
     // note rather than firing a request that will just fail.
@@ -336,7 +439,26 @@ export default function AskOrcaChat({
     }
   }
 
+  // Clear the conversation back to a fresh greeting (and the per-conversation
+  // count). Does NOT reset today's daily count.
+  function clearConversation() {
+    stopSpeaking();
+    stopRecording();
+    clearConvoStore();
+    setMessages([{ role: "orca", text: ui.greeting(shortName) }]);
+    setInput("");
+  }
+
   const hasText = input.trim().length > 0;
+  const userSent = messages.filter((m) => m.role === "user").length;
+  const dailyHit = dailyCount >= DAILY_LIMIT;
+  const convoFull = userSent >= CONVO_LIMIT;
+  const blocked = dailyHit || convoFull;
+  const limitNotice = dailyHit
+    ? txf("You've used today's {limit} messages. Please try again tomorrow.", { limit: DAILY_LIMIT })
+    : convoFull
+      ? txf("This conversation is full ({limit} messages). Clear it to keep chatting.", { limit: CONVO_LIMIT })
+      : null;
 
   return (
     <div
@@ -348,20 +470,37 @@ export default function AskOrcaChat({
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/40" />
 
       <div className="pop-enter relative flex h-[85dvh] w-full max-w-md flex-col overflow-hidden rounded-t-[28px] bg-app sm:h-[600px] sm:max-h-[86dvh] sm:rounded-[28px]">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-black/5 bg-card px-5 py-3.5">
-          <div>
+        {/* Header — usage counters replace the old AI-assistant note. */}
+        <div className="flex items-center justify-between gap-2 border-b border-black/5 bg-card px-5 py-3.5">
+          <div className="min-w-0">
             <p className="text-[16px] font-extrabold text-ink">Ask ORCA</p>
-            <p className="text-[11px] text-faint">{ui.voiceNote}</p>
+            <p className="text-[11px] leading-tight text-faint">
+              {txf("{sent}/{limit} today", { sent: dailyCount, limit: DAILY_LIMIT })}
+              {" · "}
+              {txf("{conv}/{limit} this chat", { conv: userSent, limit: CONVO_LIMIT })}
+              {" · "}
+              {txf("resets in {t}", { t: timeUntilReset() })}
+            </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-app shadow-sm"
-          >
-            <X size={20} className="text-ink" />
-          </button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <button
+              type="button"
+              onClick={clearConversation}
+              aria-label={tx("Clear conversation")}
+              title={tx("Clear conversation")}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-app text-faint shadow-sm transition-colors hover:text-ink"
+            >
+              <RotateCcw size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-app shadow-sm"
+            >
+              <X size={20} className="text-ink" />
+            </button>
+          </div>
         </div>
 
         {/* Messages */}
@@ -447,7 +586,7 @@ export default function AskOrcaChat({
         </div>
 
         {/* Suggested prompts (hidden once the conversation gets going) */}
-        {messages.length <= 1 && !sending && (
+        {messages.length <= 1 && !sending && !blocked && (
           <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-2">
             {ui.prompts[hazard].map((p) => (
               <button
@@ -459,6 +598,23 @@ export default function AskOrcaChat({
                 {p}
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Usage-limit notice — sending is blocked; clearing helps only when the
+            conversation is full (not when the daily limit is reached). */}
+        {blocked && limitNotice && (
+          <div className="flex items-center gap-2 border-t border-black/5 bg-warn-soft px-4 py-2.5">
+            <span className="text-[12.5px] font-medium leading-snug text-[#8a5a00]">{limitNotice}</span>
+            {convoFull && !dailyHit && (
+              <button
+                type="button"
+                onClick={clearConversation}
+                className="ml-auto shrink-0 rounded-full bg-warn px-3 py-1 text-[12px] font-semibold text-white transition-transform active:scale-95"
+              >
+                {tx("Clear")}
+              </button>
+            )}
           </div>
         )}
 
@@ -475,7 +631,7 @@ export default function AskOrcaChat({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={recording ? ui.listening : transcribing ? ui.transcribing : ui.placeholder(shortName)}
-            disabled={recording || transcribing}
+            disabled={recording || transcribing || blocked}
             className="flex-1 rounded-full border border-black/10 bg-white px-4 py-2.5 text-[14px] text-ink outline-none transition-colors placeholder:text-faint focus:border-brand disabled:bg-app"
           />
 
@@ -483,7 +639,7 @@ export default function AskOrcaChat({
             <button
               type="submit"
               aria-label="Send"
-              disabled={sending}
+              disabled={sending || blocked}
               className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand text-white transition-transform active:scale-95 disabled:opacity-40"
             >
               <Send size={18} />
@@ -493,7 +649,7 @@ export default function AskOrcaChat({
               type="button"
               onClick={recording ? stopRecording : startRecording}
               aria-label={recording ? "Stop recording" : "Record voice"}
-              disabled={transcribing || !online}
+              disabled={transcribing || !online || blocked}
               title={!online ? ui.offline : undefined}
               className={`grid h-10 w-10 shrink-0 place-items-center rounded-full transition-transform active:scale-95 disabled:opacity-40 ${
                 recording ? "animate-pulse bg-danger text-white" : "bg-brand text-white"
