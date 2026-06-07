@@ -96,19 +96,19 @@ export default function BroadcastSheet() {
                     <Megaphone size={18} className="text-white" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    {matchedCondition ? (
-                      <span className="mb-1 inline-flex items-center rounded-full bg-[#002C77]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#002C77]">
-                        {tx(matchedCondition)}
-                      </span>
-                    ) : b.urgency === "HIGH" ? (
-                      <span className="mb-1 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-700">
-                        {tx("Urgent")}
-                      </span>
-                    ) : null}
                     <span className="display block text-[16px] text-ink">{tx(content.title)}</span>
                     <span className="mt-0.5 block text-[12px] text-faint">
                       {b.source} · {b.time}
                     </span>
+                    {matchedCondition ? (
+                      <span className="mt-1.5 inline-flex items-center rounded-full bg-[#002C77]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#002C77]">
+                        {tx(matchedCondition)}
+                      </span>
+                    ) : b.urgency === "HIGH" ? (
+                      <span className="mt-1.5 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-700">
+                        {tx("Urgent")}
+                      </span>
+                    ) : null}
                   </span>
                   <ChevronDown
                     size={22}

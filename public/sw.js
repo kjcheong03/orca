@@ -6,8 +6,11 @@
 // and cross-origin (Supabase media) always go straight to the network. This is
 // safer than stale-while-revalidate during active development — there's no
 // "saw the old code one more time after a redeploy" window.
+// On activate, the SW also force-reloads every controlled window via
+// client.navigate(), so installs that pre-date the client-side
+// controllerchange listener still pick up new builds.
 
-const CACHE = "orca-v5";
+const CACHE = "orca-v6";
 const OFFLINE_URL = "/";
 
 // --- Offline request outbox (Background Sync) ------------------------------
@@ -81,12 +84,35 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches
-      .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
+  event.waitUntil((async () => {
+    // 1. Delete any cache whose key doesn't match the current CACHE version.
+    const keys = await caches.keys();
+    await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
+
+    // 2. Take control of every existing client immediately (so the navigate
+    //    call below targets clients this SW is now the controller of).
+    await self.clients.claim();
+
+    // 3. Server-side force-reload of every controlled window. This is the
+    //    only way to update installs from BEFORE the controllerchange
+    //    auto-reload listener existed in client code — those clients won't
+    //    react to a controller swap on their own, so we push them.
+    //    Wrapped in try/catch per client because navigate() can reject in
+    //    some browsers (Firefox, Safari) where it isn't supported.
+    const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    await Promise.all(clients.map(async (client) => {
+      try {
+        if (typeof client.navigate === "function") {
+          await client.navigate(client.url);
+        } else {
+          // Fallback: postMessage and let any controllerchange listener pick it up.
+          client.postMessage({ type: "SW_ACTIVATED" });
+        }
+      } catch {
+        /* navigation refused (e.g. cross-origin redirect target) — ignore */
+      }
+    }));
+  })());
 });
 
 self.addEventListener("fetch", (event) => {
