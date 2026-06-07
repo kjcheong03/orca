@@ -4,19 +4,24 @@ import { useEffect, useRef, useState } from "react";
 import { Loader2, Mic, Send, Square, Volume2, X } from "lucide-react";
 import Mascot from "@/components/Mascot";
 import VideoResource from "@/components/VideoResource";
+import { SolidPhone } from "@/components/glyphs";
 import { useApp } from "@/context/AppContext";
 import { useOnline, isOffline } from "@/lib/online";
-import { patient } from "@/lib/data";
+import { ambulance, patient } from "@/lib/data";
 import { findVideo } from "@/lib/media";
 import type { Hazard } from "@/lib/scenario";
 import type { Language } from "@/lib/types";
 
 const shortName = patient.name.split(" ").slice(0, 2).join(" "); // "Madam Tan"
 
+type Severity = "info" | "caution" | "urgent" | "emergency";
+
 interface Msg {
   role: "orca" | "user";
   text: string;
   videoId?: string | null;
+  /** Set on real AI answers (not the greeting/offline/error lines). */
+  severity?: Severity;
 }
 
 // Localised chrome so the whole experience — not just the AI's replies —
@@ -145,9 +150,12 @@ export default function AskOrcaChat({
   hazard: Hazard;
   date: string;
 }) {
-  const { lang } = useApp();
+  const { lang, tx, txf } = useApp();
   const online = useOnline();
   const ui = CHAT_UI[lang];
+  // The authority behind today's grounded data — shown as a source chip so the
+  // caregiver can see answers are based on official guidance.
+  const sourceLabel = hazard === "dengue" ? "NEA" : "MOH";
 
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -189,6 +197,17 @@ export default function AskOrcaChat({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, onClose]);
 
+  // Lock the page from scrolling while the chat is open, so scrolling the
+  // conversation can't drag the page underneath (which made the bottom nav peek in).
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   if (!open) return null;
 
   async function send(text: string) {
@@ -222,7 +241,10 @@ export default function AskOrcaChat({
       });
       const data = await res.json();
       if (!res.ok || !data.reply) throw new Error(data.error ?? "no reply");
-      setMessages((m) => [...m, { role: "orca", text: data.reply, videoId: data.videoId ?? null }]);
+      setMessages((m) => [
+        ...m,
+        { role: "orca", text: data.reply, videoId: data.videoId ?? null, severity: data.severity },
+      ]);
     } catch {
       setMessages((m) => [...m, { role: "orca", text: ui.error }]);
     } finally {
@@ -343,7 +365,7 @@ export default function AskOrcaChat({
         </div>
 
         {/* Messages */}
-        <div ref={scrollRef} className="no-scrollbar flex-1 space-y-3 overflow-y-auto px-4 py-5">
+        <div ref={scrollRef} className="no-scrollbar flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-5">
           {messages.map((m, i) => {
             const video = m.videoId ? findVideo(m.videoId) : null;
             return (
@@ -365,22 +387,40 @@ export default function AskOrcaChat({
                       {m.text}
                     </p>
                     {m.role === "orca" && (
-                      <button
-                        type="button"
-                        onClick={() => speak(i, m.text)}
-                        aria-label={ui.readAloud}
-                        title={ui.readAloud}
-                        disabled={!online}
-                        className="flex items-center gap-1 rounded-full px-1.5 py-0.5 text-faint transition-colors hover:text-brand disabled:opacity-40 disabled:hover:text-faint"
-                      >
-                        {ttsLoadingIdx === i ? (
-                          <Loader2 size={15} className="animate-spin" />
-                        ) : speakingIdx === i ? (
-                          <Square size={14} className="fill-brand text-brand" />
-                        ) : (
-                          <Volume2 size={15} />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => speak(i, m.text)}
+                          aria-label={ui.readAloud}
+                          title={ui.readAloud}
+                          disabled={!online}
+                          className="flex items-center gap-1 rounded-full px-1.5 py-0.5 text-faint transition-colors hover:text-brand disabled:opacity-40 disabled:hover:text-faint"
+                        >
+                          {ttsLoadingIdx === i ? (
+                            <Loader2 size={15} className="animate-spin" />
+                          ) : speakingIdx === i ? (
+                            <Square size={14} className="fill-brand text-brand" />
+                          ) : (
+                            <Volume2 size={15} />
+                          )}
+                        </button>
+                        {/* Source chip — answers are grounded in today's official data. */}
+                        {m.severity && m.severity !== "emergency" && (
+                          <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-semibold text-faint">
+                            {txf("Based on {source}", { source: sourceLabel })}
+                          </span>
                         )}
-                      </button>
+                      </div>
+                    )}
+
+                    {/* Emergency → one-tap call to 995. */}
+                    {m.role === "orca" && m.severity === "emergency" && (
+                      <a
+                        href={`tel:${ambulance.phone}`}
+                        className="mt-0.5 inline-flex items-center gap-2 self-start rounded-full bg-danger px-4 py-2 text-[14px] font-bold text-white shadow-sm transition-transform active:scale-95"
+                      >
+                        <SolidPhone size={16} /> {tx("Call 995")}
+                      </a>
                     )}
                   </div>
                 </div>

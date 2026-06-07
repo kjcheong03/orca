@@ -27,6 +27,8 @@ export const chrome: Dict = {
 
   // --- offline / connectivity ---
   Dismiss: { id: "Tutup", ms: "Tutup", tl: "Isara", zh: "关闭", my: "ပိတ်ရန်" },
+  "Call 995": { id: "Hubungi 995", ms: "Hubungi 995", tl: "Tumawag sa 995", zh: "拨打 995", my: "995 ကို ခေါ်ပါ" },
+  "Based on {source}": { id: "Berdasarkan {source}", ms: "Berdasarkan {source}", tl: "Batay sa {source}", zh: "依据 {source}", my: "{source} အပေါ် အခြေခံ" },
   "You're offline — emergency info and contacts still work.": {
     id: "Anda sedang offline — info darurat dan kontak tetap berfungsi.",
     ms: "Anda di luar talian — maklumat kecemasan dan kenalan masih berfungsi.",
