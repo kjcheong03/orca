@@ -145,7 +145,7 @@ const CHAT_UI: Record<Language, Ui> = {
 const CONVO_KEY = "orca-chat-convo";
 const DAILY_KEY = "orca-chat-daily";
 const DAILY_LIMIT = 20; // messages YOU can send per day (replies don't count)
-const CONVO_LIMIT = 30; // your messages kept in one conversation before it's full
+const CONVO_LIMIT = 20; // your messages kept in one conversation before it's full
 
 function dayKey(): string {
   const d = new Date();

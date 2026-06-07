@@ -44,7 +44,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid json" }, { status: 400 });
   }
 
-  const messages = (body.messages ?? []).slice(-12);
+  // Send the whole current conversation as context. The client caps a conversation
+  // at 20 of the user's own messages (~41 total incl. replies), so this stays bounded
+  // and keeps the model's memory consistent with that cap — not a separate window.
+  const messages = (body.messages ?? []).slice(-42);
   const lang: Language = body.lang ?? "en";
   const hazard: Hazard = body.hazard === "dengue" ? "dengue" : "covid";
   const date = body.date ?? "2023-11-13";
