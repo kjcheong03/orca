@@ -5,6 +5,10 @@ import { Globe } from "lucide-react";
 import FormatBadge from "@/components/ui/FormatBadge";
 import type { MediaItem } from "@/lib/media";
 
+/** A MediaItem that may also carry a tailoring tag (e.g. "Diabetes") which
+ *  the carousel renders as a small chip in the corner of the card. */
+export type CarouselItem = MediaItem & { targetTag?: string };
+
 function domainOf(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
@@ -34,11 +38,23 @@ const cardCls =
   "flex h-[172px] w-[256px] shrink-0 snap-start flex-col rounded-[16px] border border-black/[0.07] bg-card p-4 text-left transition-shadow hover:shadow-[0_4px_16px_rgba(30,50,90,0.12)]";
 
 /** A publisher link-preview that opens the real page in a new tab. The source
- *  name + format icon are tinted per category (blue news / green guidance). */
-function LinkCard({ item, accentText }: { item: MediaItem; accentText: string }) {
+ *  name + format icon are tinted per category (blue news / green guidance).
+ *  When the item carries a `targetTag` (tailored to a Target condition), a
+ *  small chip is rendered top-right so the caregiver sees why it surfaced. */
+function LinkCard({ item, accentText }: { item: CarouselItem; accentText: string }) {
   const domain = domainOf(item.url);
   return (
-    <a href={item.url} target="_blank" rel="noreferrer" className={cardCls}>
+    <a href={item.url} target="_blank" rel="noreferrer" className={`${cardCls} relative`}>
+      {/* Tailored-to chip (only on items that came from the per-condition feed) */}
+      {item.targetTag && (
+        <span
+          className="absolute right-2 top-2 rounded-full bg-brand/10 px-2 py-[2px] text-[10px] font-bold uppercase tracking-wide text-brand"
+          aria-label={`Tailored to ${item.targetTag}`}
+        >
+          {item.targetTag}
+        </span>
+      )}
+
       {/* Source anchor */}
       <div className="flex items-center gap-2">
         <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-app">
@@ -73,7 +89,9 @@ export default function MediaCarousel({
   accent,
 }: {
   title: string;
-  items: MediaItem[];
+  /** Accepts plain MediaItems as well as items carrying an optional
+   *  `targetTag` (rendered as a chip on the card — see {@link CarouselItem}). */
+  items: CarouselItem[];
   accent: "blue" | "green";
 }) {
   const accentText = accent === "green" ? "text-[#1a8f5e]" : "text-brand";

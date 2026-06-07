@@ -16,8 +16,9 @@ import ClusterMap from "@/components/ClusterMap";
 import { useApp } from "@/context/AppContext";
 import { useOnline, isOffline } from "@/lib/online";
 import { readCache, saveCache } from "@/lib/offlineCache";
-import { guidance, news, videos } from "@/lib/media";
+import { guidance, loadTailoredGuidance, news, videos, type MediaItem } from "@/lib/media";
 import { patient } from "@/lib/data";
+import { loadActiveProfile } from "@/lib/profiles";
 import { getDengueScenario, HOME } from "@/lib/dengue";
 import { covidWeekly } from "@/lib/outbreaks";
 import {
@@ -243,13 +244,55 @@ function SwitchingSkeleton() {
   );
 }
 
+/** A guidance MediaItem carrying its Target so the carousel can render a chip. */
+type TaggedGuidance = MediaItem & { targetTag: string };
+
 export default function InfoScreen() {
   const { tx } = useApp();
+  const online = useOnline();
   const [hazard, setHazard] = useState<Hazard>(defaultHazard);
   const [date, setDate] = useState(defaultDate);
   const [chatOpen, setChatOpen] = useState(false);
   const [view, setView] = useState<"overview" | "resources">("overview");
   const [switching, setSwitching] = useState(false);
+  // Per-condition guidance fetched from the shared Supabase table; prepended
+  // to the bundled `guidance[hazard]` list so caregivers see tailored advice
+  // first. Failures (offline, no rows, server error) collapse to [] and the
+  // carousel silently falls back to the generic items.
+  const [tailoredGuidance, setTailoredGuidance] = useState<TaggedGuidance[]>([]);
+
+  // The active elderly profile drives which Target conditions get tailored
+  // guidance. SSR returns the seed patient (matchedTargets ["Heart","Diabetes"]);
+  // the client re-runs on mount with whatever's in localStorage.
+  const activeProfile = useState(() => loadActiveProfile())[0];
+  const targetsKey = (activeProfile.matchedTargets ?? []).join(",");
+
+  useEffect(() => {
+    if (!online) {
+      setTailoredGuidance([]);
+      return;
+    }
+    let cancelled = false;
+    const targets = activeProfile.matchedTargets ?? [];
+    void loadTailoredGuidance(hazard, targets).then((rows) => {
+      if (cancelled) return;
+      const mapped: TaggedGuidance[] = rows.map((r) => ({
+        id: `tg-${r.hazard}-${r.target}-${r.id}`,
+        source: r.source,
+        title: r.title,
+        url: r.url,
+        format: "Article",
+        targetTag: r.target,
+      }));
+      setTailoredGuidance(mapped);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // targetsKey collapses the array dep into a stable string so the effect
+    // doesn't re-fire on identical reloads of matchedTargets.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hazard, targetsKey, online]);
 
   // Briefly show a ghost card when the date changes, so switching days is obvious.
   const handleDateChange = (d: string) => {
@@ -351,7 +394,11 @@ export default function InfoScreen() {
         ) : (
           <>
             <MediaCarousel title={tx("Latest updates")} items={news[hazard]} accent="blue" />
-            <MediaCarousel title={tx("Guidance resources")} items={guidance[hazard]} accent="green" />
+            <MediaCarousel
+              title={tx("Guidance resources")}
+              items={[...tailoredGuidance, ...guidance[hazard]]}
+              accent="green"
+            />
             {videos[hazard] && <VideoResource {...videos[hazard]!} />}
           </>
         )}

@@ -118,6 +118,34 @@ export function dubVideoSrc(src: string, lang: Language): string {
   return src.replace(/\.mp4$/, `.${lang}.mp4`);
 }
 
+export interface TailoredGuidanceItem {
+  id: string;
+  hazard: 'covid' | 'dengue';
+  target: string;
+  source: string;
+  title: string;
+  url: string;
+  blurb: string | null;
+}
+
+/** Fetch tailored guidance for (hazard, matchedTargets). Returns [] on any
+ *  failure — caller treats it as "no tailored" and the carousel falls back to
+ *  the generic items in `guidance[hazard]`. */
+export async function loadTailoredGuidance(
+  hazard: 'covid' | 'dengue',
+  targets: string[],
+): Promise<TailoredGuidanceItem[]> {
+  if (targets.length === 0) return [];
+  try {
+    const params = new URLSearchParams({ hazard, targets: targets.join(',') });
+    const res = await fetch(`/api/guidance/tailored?${params}`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return (await res.json()) as TailoredGuidanceItem[];
+  } catch {
+    return [];
+  }
+}
+
 export const guidance: Record<Hazard, MediaItem[]> = {
   covid: [
     {
