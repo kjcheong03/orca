@@ -8,6 +8,7 @@ import { languageNames, languageOrder } from "@/lib/i18n";
 import {
   blankMedicine,
   blankProfile,
+  classifyAndSaveProfile,
   composeAddress,
   defaultCaregiver,
   defaultProfiles,
@@ -166,11 +167,15 @@ export default function ProfileScreen() {
     setIsNew(false);
   };
 
-  const save = () => {
+  const save = async () => {
     if (!draft) return;
     const cleaned = clean(draft);
-    setProfiles((l) => l.map((p) => (p.id === cleaned.id ? cleaned : p)));
-    setActiveId(cleaned.id);
+    // Background enrichment: classify conditions against the controlled Target
+    // vocabulary so the broadcast banner can filter by audience. Permissive on
+    // failure — classifyAndSaveProfile returns the profile unchanged on error.
+    const enriched = await classifyAndSaveProfile(cleaned);
+    setProfiles((l) => l.map((p) => (p.id === enriched.id ? enriched : p)));
+    setActiveId(enriched.id);
     setEditing(false);
     setDraft(null);
     setIsNew(false);

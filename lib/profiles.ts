@@ -23,6 +23,10 @@ export interface ElderProfile {
   conditions: string[];
   emergencyMedicine: EmergencyMedicine[];
   notes: string[];
+  /** Pre-computed Target categories from conditions[], cached so the broadcast
+   *  filter doesn't have to re-classify on every fetch. Empty array means
+   *  classification hasn't run yet (or all conditions were unclassifiable). */
+  matchedTargets?: string[];
 }
 
 /** Combine the address parts into one display string. */
@@ -102,6 +106,7 @@ export function defaultProfiles(): ElderProfile[] {
       conditions: [...patient.conditions],
       emergencyMedicine: patient.emergencyMedicine.map((m) => ({ ...m })),
       notes: [...DEFAULT_NOTES],
+      matchedTargets: ["Heart", "Diabetes"],
     },
   ];
 }
@@ -211,7 +216,33 @@ export function blankProfile(id: string): ElderProfile {
     conditions: [],
     emergencyMedicine: [],
     notes: [],
+    matchedTargets: [],
   };
+}
+
+/**
+ * Classify a profile's conditions[] against the controlled Target vocabulary
+ * by calling the server endpoint, and return a copy of the profile with
+ * `matchedTargets` updated. Permissive failure mode: on any error (network,
+ * non-OK status, parse failure) the profile is returned unchanged so the
+ * previous matchedTargets stays intact. The caller decides whether to persist
+ * the result via saveProfiles.
+ */
+export async function classifyAndSaveProfile(profile: ElderProfile): Promise<ElderProfile> {
+  try {
+    const res = await fetch("/api/profile/classify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ conditions: profile.conditions }),
+    });
+    if (!res.ok) return profile;
+    const data = (await res.json()) as { matchedTargets?: unknown };
+    if (!Array.isArray(data.matchedTargets)) return profile;
+    const matchedTargets = data.matchedTargets.filter((t): t is string => typeof t === "string");
+    return { ...profile, matchedTargets };
+  } catch {
+    return profile;
+  }
 }
 
 /** Up-to-two-letter initials for the switcher avatar. */
