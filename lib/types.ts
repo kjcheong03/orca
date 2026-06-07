@@ -65,6 +65,13 @@ export interface Broadcast {
   /** Per-language versions keyed by ORCA language code (zh, ms, id, tl, my).
    *  English is the base (title/body); other languages come from the authority. */
   translations?: Record<string, { title: string; body: string }>;
+  /** Authority audience mode — 'all' = broadcast to every caregiver,
+   *  'selected' = only to caregivers whose profile.matchedTargets overlaps
+   *  with targetProfiles. Optional + defaults to 'all' for back-compat. */
+  audienceMode?: 'all' | 'selected';
+  /** Authority-picked profile targets (e.g. ['Diabetes','Heart']) — read from
+   *  the broadcasts row's target_profiles JSONB column. */
+  targetProfiles?: string[];
 }
 
 export interface Contact {

@@ -1,14 +1,25 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, Megaphone, X } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { filterBroadcastsForProfile } from "@/lib/broadcasts";
+import { loadActiveProfile } from "@/lib/profiles";
 
 export default function BroadcastSheet() {
   const { broadcastOpen, closeBroadcast, t, tx, broadcasts, lang } = useApp();
   const closeRef = useRef<HTMLButtonElement>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  // Filter broadcasts down to those targeted at the active elder profile.
+  // matchedTargets is populated upstream via the L1-L4 matcher cascade on
+  // profile save, so this stays a pure synchronous overlap check.
+  const activeProfile = useMemo(() => loadActiveProfile(), [broadcastOpen]);
+  const visible = useMemo(
+    () => filterBroadcastsForProfile(broadcasts, activeProfile?.matchedTargets ?? []),
+    [broadcasts, activeProfile?.matchedTargets],
+  );
 
   useEffect(() => {
     if (!broadcastOpen) return;
@@ -52,7 +63,7 @@ export default function BroadcastSheet() {
         </div>
 
         <div className="no-scrollbar space-y-3 overflow-y-auto px-5 pb-8">
-          {broadcasts.length === 0 && (
+          {visible.length === 0 && (
             <div className="rounded-[20px] bg-card px-5 py-10 text-center shadow-[0_2px_14px_rgba(30,50,90,0.06)]">
               <p className="text-[15px] font-semibold text-ink">{tx("No active advisories")}</p>
               <p className="mt-1.5 text-[13px] text-muted">
@@ -60,7 +71,7 @@ export default function BroadcastSheet() {
               </p>
             </div>
           )}
-          {broadcasts.map((b) => {
+          {visible.map((b) => {
             const open = expanded === b.id;
             // Show the caregiver's app-language version when available; else English.
             const content = lang !== "en" && b.translations?.[lang] ? b.translations[lang] : { title: b.title, body: b.body };

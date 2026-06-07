@@ -21,6 +21,8 @@ interface BroadcastRow {
   urgency: "HIGH" | "NORMAL";
   sent_at: string;
   status: string;
+  audience_mode: 'all' | 'selected' | null;
+  target_profiles: string[] | null;
   draft_snapshot: { translations?: Record<string, { title?: string; body?: string }> } | null;
   runs: { topic: string | null } | { topic: string | null }[] | null;
 }
@@ -36,7 +38,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("broadcasts")
-    .select("id, title, body, urgency, sent_at, status, draft_snapshot, runs(topic)")
+    .select("id, title, body, urgency, sent_at, status, audience_mode, target_profiles, draft_snapshot, runs(topic)")
     .eq("status", "sent")
     .order("sent_at", { ascending: false })
     .limit(20);
@@ -66,6 +68,8 @@ export async function GET() {
       time: formatSgt(row.sent_at),
       urgency: row.urgency,
       translations,
+      audienceMode: row.audience_mode ?? 'all',
+      targetProfiles: Array.isArray(row.target_profiles) ? row.target_profiles : [],
     };
   });
 
