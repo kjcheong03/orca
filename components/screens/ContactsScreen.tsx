@@ -10,6 +10,7 @@ import {
   Languages,
   Loader2,
   MapPin,
+  MessageSquare,
   MessageSquareWarning,
   Mic,
   Pencil,
@@ -44,10 +45,10 @@ export default function ContactsScreen() {
   const [list, setList] = useState<Contact[]>(contacts);
   const [formMode, setFormMode] = useState<{ type: "add" } | { type: "edit"; contact: Contact } | null>(null);
   const [actionsFor, setActionsFor] = useState<Contact | null>(null);
-  const [careOpen, setCareOpen] = useState(false);
+  const [careOpen, setCareOpen] = useState(true);
   const [alertOpen, setAlertOpen] = useState(false);
   const [msg, setMsg] = useState("");
-  const [sendOpen, setSendOpen] = useState(false);
+  const [smsFor, setSmsFor] = useState<Contact | null>(null);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -204,6 +205,9 @@ export default function ContactsScreen() {
               className="overflow-hidden border-t border-black/[0.06]"
             >
               <div className="px-4 py-4">
+                <p className="mb-2.5 text-[12.5px] font-medium leading-snug text-faint">
+                  {tx("You can attach this alert message when you SMS an emergency contact below.")}
+                </p>
                 <div className="rounded-xl border border-black/10 bg-white focus-within:border-brand">
                   <textarea
                     value={msg}
@@ -228,35 +232,24 @@ export default function ContactsScreen() {
                     >
                       {tx("Clear")}
                     </button>
-                    {msg.trim() ? (
-                      <button
-                        type="button"
-                        onClick={() => setSendOpen(true)}
-                        aria-label={tx("Send")}
-                        className="grid h-9 w-9 place-items-center rounded-full bg-brand text-white transition-transform active:scale-95"
-                      >
-                        <Send size={16} />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={recording ? stopRecording : startRecording}
-                        disabled={transcribing || !online}
-                        aria-label={recording ? tx("Stop recording") : tx("Record voice message")}
-                        title={!online ? tx("Voice needs a connection") : undefined}
-                        className={`grid h-9 w-9 place-items-center rounded-full transition-transform active:scale-95 disabled:opacity-50 ${
-                          recording ? "animate-pulse bg-danger text-white" : "bg-app text-brand"
-                        }`}
-                      >
-                        {transcribing ? (
-                          <Loader2 size={16} className="animate-spin" />
-                        ) : recording ? (
-                          <Square size={14} className="fill-white" />
-                        ) : (
-                          <Mic size={16} />
-                        )}
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={recording ? stopRecording : startRecording}
+                      disabled={transcribing || !online}
+                      aria-label={recording ? tx("Stop recording") : tx("Record voice message")}
+                      title={!online ? tx("Voice needs a connection") : undefined}
+                      className={`grid h-9 w-9 place-items-center rounded-full transition-transform active:scale-95 disabled:opacity-50 ${
+                        recording ? "animate-pulse bg-danger text-white" : "bg-app text-brand"
+                      }`}
+                    >
+                      {transcribing ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : recording ? (
+                        <Square size={14} className="fill-white" />
+                      ) : (
+                        <Mic size={16} />
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -305,6 +298,14 @@ export default function ContactsScreen() {
                 </span>
                 <span className="mt-0.5 block text-[13px] leading-tight text-muted">{c.phone}</span>
               </button>
+              <button
+                type="button"
+                onClick={() => setSmsFor(c)}
+                aria-label={`SMS ${c.name}`}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-app text-brand transition-transform active:scale-95"
+              >
+                <MessageSquare size={17} />
+              </button>
               <a
                 href={`tel:${c.phone.replace(/\s/g, "")}`}
                 aria-label={`Call ${c.name}`}
@@ -336,12 +337,12 @@ export default function ContactsScreen() {
           onDelete={() => deleteContact(actionsFor.id)}
         />
       )}
-      {sendOpen && (
-        <AlertSendSheet
-          contacts={list}
+      {smsFor && (
+        <SmsSheet
+          contact={smsFor}
           alertText={msg}
           cardDetails={cardDetails}
-          onClose={() => setSendOpen(false)}
+          onClose={() => setSmsFor(null)}
         />
       )}
     </div>
@@ -360,16 +361,6 @@ function Checkbox({ on }: { on: boolean }) {
   );
 }
 
-function Switch({ on }: { on: boolean }) {
-  return (
-    <span className={`relative h-6 w-10 shrink-0 rounded-full transition-colors ${on ? "bg-brand" : "bg-black/20"}`}>
-      <span
-        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-all ${on ? "left-[18px]" : "left-0.5"}`}
-      />
-    </span>
-  );
-}
-
 // Recipient languages the alert can be sent in. The first is the default.
 const SEND_LANGS: { code: string; label: string }[] = [
   { code: "en", label: "English" },
@@ -381,24 +372,27 @@ const SEND_LANGS: { code: string; label: string }[] = [
   { code: "my", label: "မြန်မာ" },
 ];
 
-/** Compose-first alert flow: pick recipients (default none), choose the
- *  recipient's language (the alert is translated to it), optionally attach the
- *  emergency card, then fire one SMS to all selected numbers. */
-function AlertSendSheet({
-  contacts,
+/** Per-contact SMS: pick what to attach (emergency card / the alert message /
+ *  a translated version), then deep-link to the phone's Messages app for that
+ *  one number. Single recipient keeps delivery reliable across iOS/Android
+ *  (a multi-number sms: link is flaky) and sends from the caregiver's own
+ *  number — no server, no cost. */
+function SmsSheet({
+  contact,
   alertText,
   cardDetails,
   onClose,
 }: {
-  contacts: Contact[];
+  contact: Contact;
   alertText: string;
   cardDetails: string;
   onClose: () => void;
 }) {
   const { tx, txf, lang } = useApp();
   const online = useOnline();
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [withCard, setWithCard] = useState(false);
+  const hasMessage = alertText.trim().length > 0;
+  const [withCard, setWithCard] = useState(true);
+  const [withMessage, setWithMessage] = useState(hasMessage);
   const [translateOn, setTranslateOn] = useState(false);
   const [targetCode, setTargetCode] = useState("en");
   const [translated, setTranslated] = useState<string | null>(null);
@@ -410,10 +404,11 @@ function AlertSendSheet({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // Only translate when the toggle is on and the chosen language differs from
-  // the compose language — otherwise there's nothing to translate.
+  // Translate only makes sense when there's a message to include, we're online,
+  // and the chosen language differs from the compose language.
+  const translateActive = translateOn && withMessage && hasMessage && online;
   useEffect(() => {
-    if (!translateOn || !online || targetCode === lang || !alertText.trim()) {
+    if (!translateActive || targetCode === lang) {
       setTranslated(null);
       setTranslating(false);
       return;
@@ -432,144 +427,122 @@ function AlertSendSheet({
     return () => {
       cancelled = true;
     };
-  }, [translateOn, targetCode, alertText, lang, online]);
+  }, [translateActive, targetCode, alertText, lang]);
 
-  const toggle = (id: string) =>
-    setSelected((s) => {
-      const n = new Set(s);
-      if (n.has(id)) n.delete(id);
-      else n.add(id);
-      return n;
-    });
-  const allOn = contacts.length > 0 && selected.size === contacts.length;
-  const toggleAll = () => setSelected(allOn ? new Set() : new Set(contacts.map((c) => c.id)));
-
-  const outText =
-    translateOn && online && targetCode !== lang ? (translated ?? alertText.trim()) : alertText.trim();
-  const chosen = contacts.filter((c) => selected.has(c.id));
-  const numbers = chosen.map((c) => c.phone.replace(/\s/g, "")).join(",");
-  const body = `${outText}${withCard ? `\n\n${cardDetails}` : ""}`;
-  const href = `sms:${numbers}?&body=${encodeURIComponent(body)}`;
+  const messageOut = withMessage
+    ? translateActive && targetCode !== lang
+      ? (translated ?? alertText.trim())
+      : alertText.trim()
+    : "";
+  const cardOut = withCard ? cardDetails : "";
+  const body = [messageOut, cardOut].filter(Boolean).join("\n\n");
+  const number = contact.phone.replace(/\s/g, "");
+  const href = `sms:${number}${body ? `?&body=${encodeURIComponent(body)}` : ""}`;
 
   return (
     <div
       className="fade-enter fixed inset-0 z-40 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
-      aria-label={tx("Send alert")}
+      aria-label={txf("Send SMS to {name}", { name: contact.name })}
     >
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/40" />
       <div className="pop-enter relative flex max-h-[86dvh] w-full max-w-sm flex-col rounded-[28px] bg-card">
-        <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-5">
-          <p className="text-[16px] font-bold text-ink">{tx("Send alert")}</p>
-          <button
-            type="button"
-            onClick={toggleAll}
-            className="shrink-0 text-[12.5px] font-semibold text-brand hover:underline"
-          >
-            {tx("Select all")}
-          </button>
+        <div className="px-5 pb-3 pt-5">
+          <p className="text-[16px] font-bold text-ink">{txf("Send SMS to {name}", { name: contact.name })}</p>
+          <p className="mt-0.5 text-[13px] text-muted">
+            {[contact.relation, contact.phone].filter(Boolean).join(" · ")}
+          </p>
         </div>
 
         <div className="no-scrollbar space-y-2 overflow-y-auto px-5">
-          {contacts.map((c) => {
-            const on = selected.has(c.id);
-            return (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => toggle(c.id)}
-                aria-pressed={on}
-                className="flex w-full items-center gap-3 rounded-2xl bg-app px-4 py-3 text-left"
-              >
-                <Checkbox on={on} />
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-baseline gap-2 truncate">
-                    <span className="text-[14.5px] font-bold text-ink">{c.name}</span>
-                    <span className="text-[12px] text-faint">{c.relation}</span>
-                  </span>
-                  <span className="block text-[12.5px] text-muted">{c.phone}</span>
-                </span>
-              </button>
-            );
-          })}
+          {/* Include emergency card */}
+          <button
+            type="button"
+            onClick={() => setWithCard((v) => !v)}
+            aria-pressed={withCard}
+            className="flex w-full items-center gap-3 rounded-2xl bg-app px-4 py-3 text-left"
+          >
+            <IdCard size={18} className="shrink-0 text-brand" />
+            <span className="min-w-0 flex-1 text-[14px] font-semibold text-ink">
+              {tx("Include emergency card")}
+            </span>
+            <Checkbox on={withCard} />
+          </button>
 
-          <div className="mt-1 border-t border-black/[0.07] pt-1">
-            <button
-              type="button"
-              onClick={() => setWithCard((v) => !v)}
-              aria-pressed={withCard}
-              className="flex w-full items-center gap-3 px-1 py-2 text-left"
-            >
-              <IdCard size={18} className="shrink-0 text-brand" />
-              <span className="flex-1 text-[14px] font-semibold text-ink">{tx("Include emergency card")}</span>
-              <Switch on={withCard} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setTranslateOn((v) => !v)}
-              aria-pressed={translateOn && online}
-              disabled={!online}
-              className="flex w-full items-center gap-3 px-1 py-2 text-left disabled:opacity-50"
-            >
-              <Languages size={18} className="shrink-0 text-brand" />
-              <span className="flex-1 text-[14px] font-semibold text-ink">
-                {tx("Translate message")}
-                {!online && (
-                  <span className="ml-1 text-[12px] font-medium text-faint">
-                    · {tx("needs a connection")}
-                  </span>
-                )}
-              </span>
-              <Switch on={translateOn && online} />
-            </button>
-          </div>
-        </div>
-
-        {/* Recipient language + translated preview — only when translating */}
-        {translateOn && online && (
-        <div className="border-t border-black/[0.06] px-5 pt-3">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[12px] font-bold uppercase tracking-wider text-faint">{tx("Send in")}</span>
-            <div className="relative">
-              <select
-                value={targetCode}
-                onChange={(e) => setTargetCode(e.target.value)}
-                className="appearance-none rounded-lg border border-black/10 bg-white py-1.5 pl-3 pr-8 text-[13px] font-semibold text-ink outline-none focus:border-brand"
-              >
-                {SEND_LANGS.map((l) => (
-                  <option key={l.code} value={l.code}>
-                    {l.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={16} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-faint" />
-            </div>
-          </div>
-          {alertText.trim() && (
-            <div className="mt-2 max-h-24 overflow-y-auto rounded-xl bg-app px-3 py-2 text-[13px] leading-snug text-body">
-              {translating ? (
-                <span className="flex items-center gap-1.5 text-faint">
-                  <Loader2 size={14} className="animate-spin" /> {tx("Translating…")}
-                </span>
-              ) : (
-                outText
+          {/* Include alert message */}
+          <button
+            type="button"
+            onClick={() => hasMessage && setWithMessage((v) => !v)}
+            aria-pressed={withMessage && hasMessage}
+            disabled={!hasMessage}
+            className="flex w-full items-center gap-3 rounded-2xl bg-app px-4 py-3 text-left disabled:opacity-50"
+          >
+            <MessageSquareWarning size={18} className="shrink-0 text-brand" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-semibold text-ink">{tx("Include alert message")}</span>
+              {!hasMessage && (
+                <span className="block text-[12px] text-faint">{tx("No message written yet")}</span>
               )}
+            </span>
+            <Checkbox on={withMessage && hasMessage} />
+          </button>
+
+          {/* Translate message */}
+          <button
+            type="button"
+            onClick={() => setTranslateOn((v) => !v)}
+            aria-pressed={translateActive}
+            disabled={!withMessage || !hasMessage || !online}
+            className="flex w-full items-center gap-3 rounded-2xl bg-app px-4 py-3 text-left disabled:opacity-50"
+          >
+            <Languages size={18} className="shrink-0 text-brand" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-semibold text-ink">{tx("Translate message")}</span>
+              {!online ? (
+                <span className="block text-[12px] text-faint">{tx("needs a connection")}</span>
+              ) : !withMessage || !hasMessage ? (
+                <span className="block text-[12px] text-faint">{tx("Include a message first")}</span>
+              ) : null}
+            </span>
+            <Checkbox on={translateActive} />
+          </button>
+
+          {/* Recipient language + translated preview — only when translating */}
+          {translateActive && (
+            <div className="rounded-2xl bg-app px-4 py-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[12px] font-bold uppercase tracking-wider text-faint">{tx("Send in")}</span>
+                <div className="relative">
+                  <select
+                    value={targetCode}
+                    onChange={(e) => setTargetCode(e.target.value)}
+                    className="appearance-none rounded-lg border border-black/10 bg-white py-1.5 pl-3 pr-8 text-[13px] font-semibold text-ink outline-none focus:border-brand"
+                  >
+                    {SEND_LANGS.map((l) => (
+                      <option key={l.code} value={l.code}>
+                        {l.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={16} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-faint" />
+                </div>
+              </div>
+              <div className="mt-2 max-h-24 overflow-y-auto rounded-xl bg-white px-3 py-2 text-[13px] leading-snug text-body">
+                {translating ? (
+                  <span className="flex items-center gap-1.5 text-faint">
+                    <Loader2 size={14} className="animate-spin" /> {tx("Translating…")}
+                  </span>
+                ) : (
+                  messageOut || alertText.trim()
+                )}
+              </div>
             </div>
           )}
         </div>
-        )}
 
         <div className="px-5 pb-5 pt-3">
-          {chosen.length === 0 ? (
-            <button
-              type="button"
-              disabled
-              className="w-full rounded-full bg-[#d5d9e1] py-3.5 text-[15px] font-semibold text-[#6b7280]"
-            >
-              {tx("Select recipients")}
-            </button>
-          ) : translating ? (
+          {translating ? (
             <button
               type="button"
               disabled
@@ -583,7 +556,7 @@ function AlertSendSheet({
               onClick={onClose}
               className="flex w-full items-center justify-center gap-2 rounded-full bg-brand py-3.5 text-[15px] font-semibold text-white shadow-sm transition-transform active:scale-[0.99]"
             >
-              <Send size={17} /> {txf("Send to {count}", { count: chosen.length })}
+              <Send size={17} /> {tx("Send SMS")}
             </a>
           )}
         </div>
