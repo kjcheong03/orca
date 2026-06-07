@@ -1,4 +1,4 @@
-// Generate the app icon set from CARA's mascot (the same "hooded blob" rendered
+// Generate the app icon set from ORCA's mascot (the same "hooded blob" rendered
 // on the homepage). Run once: `node scripts/gen-icons.mjs`.
 //
 // - Browser favicon + "any"-purpose PWA icons: TRANSPARENT background.

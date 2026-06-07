@@ -1,4 +1,4 @@
-// Small geometric "characters" in the CARA mascot's vibe (soft blue, white
+// Small geometric "characters" in the ORCA mascot's vibe (soft blue, white
 // face, simple happy features). Decorative — used on the Contacts actions.
 
 const BLUE = "#5b9be8";

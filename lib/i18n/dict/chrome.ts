@@ -27,12 +27,12 @@ export const chrome: Dict = {
 
   // --- Info screen ---
   "For {name} today": { id: "Untuk {name} hari ini", ms: "Untuk {name} hari ini", tl: "Para kay {name} ngayon", zh: "今天为{name}", my: "ယနေ့ {name} အတွက်" },
-  "CARA tailors these to {name}'s age and conditions. Detailed reasoning is a work in progress.": {
-    id: "CARA menyesuaikan ini dengan usia dan kondisi {name}. Penjelasan rinci masih dalam pengembangan.",
-    ms: "CARA menyesuaikan ini dengan usia dan keadaan {name}. Penjelasan terperinci masih dalam pembangunan.",
-    tl: "Iniaangkop ng CARA ang mga ito sa edad at kondisyon ni {name}. Ang detalyadong paliwanag ay ginagawa pa.",
-    zh: "CARA 会根据{name}的年龄和健康状况调整这些建议。详细说明仍在完善中。",
-    my: "CARA သည် ၎င်းတို့ကို {name} ၏ အသက်နှင့် ကျန်းမာရေးအခြေအနေအလိုက် ချိန်ညှိပေးသည်။ အသေးစိတ်ရှင်းလင်းချက်ကို ဆောင်ရွက်ဆဲဖြစ်သည်။",
+  "ORCA tailors these to {name}'s age and conditions. Detailed reasoning is a work in progress.": {
+    id: "ORCA menyesuaikan ini dengan usia dan kondisi {name}. Penjelasan rinci masih dalam pengembangan.",
+    ms: "ORCA menyesuaikan ini dengan usia dan keadaan {name}. Penjelasan terperinci masih dalam pembangunan.",
+    tl: "Iniaangkop ng ORCA ang mga ito sa edad at kondisyon ni {name}. Ang detalyadong paliwanag ay ginagawa pa.",
+    zh: "ORCA 会根据{name}的年龄和健康状况调整这些建议。详细说明仍在完善中。",
+    my: "ORCA သည် ၎င်းတို့ကို {name} ၏ အသက်နှင့် ကျန်းမာရေးအခြေအနေအလိုက် ချိန်ညှိပေးသည်။ အသေးစိတ်ရှင်းလင်းချက်ကို ဆောင်ရွက်ဆဲဖြစ်သည်။",
   },
   "{count} clusters active · {cases} cases islandwide": {
     id: "{count} klaster aktif · {cases} kasus se-pulau",
@@ -197,12 +197,12 @@ export const chrome: Dict = {
 
   // --- Review & match ---
   "Request sent": { id: "Permintaan terkirim", ms: "Permintaan dihantar", tl: "Naipadala ang kahilingan", zh: "请求已发送", my: "တောင်းဆိုချက် ပို့ပြီးပါပြီ" },
-  "CARA has sent your {req} to the selected partners and active distribution channels. They'll reach out via your chosen contact method.": {
-    id: "CARA telah mengirim {req} Anda ke mitra terpilih dan saluran distribusi aktif. Mereka akan menghubungi melalui metode kontak pilihan Anda.",
-    ms: "CARA telah menghantar {req} anda kepada rakan kongsi terpilih dan saluran pengagihan aktif. Mereka akan menghubungi melalui kaedah pilihan anda.",
-    tl: "Ipinadala na ng CARA ang iyong {req} sa mga napiling partner at aktibong distribution channel. Makikipag-ugnayan sila gamit ang napili mong paraan.",
-    zh: "CARA 已将您的{req}发送给所选合作伙伴和活跃的分发渠道。他们将通过您选择的联系方式与您联系。",
-    my: "CARA သည် သင်၏ {req} ကို ရွေးချယ်ထားသော မိတ်ဖက်များနှင့် တက်ကြွသော ဖြန့်ဖြူးရေးလမ်းကြောင်းများထံ ပို့ပြီးပါပြီ။ သင်ရွေးချယ်ထားသော နည်းဖြင့် ဆက်သွယ်ပါမည်။",
+  "ORCA has sent your {req} to the selected partners and active distribution channels. They'll reach out via your chosen contact method.": {
+    id: "ORCA telah mengirim {req} Anda ke mitra terpilih dan saluran distribusi aktif. Mereka akan menghubungi melalui metode kontak pilihan Anda.",
+    ms: "ORCA telah menghantar {req} anda kepada rakan kongsi terpilih dan saluran pengagihan aktif. Mereka akan menghubungi melalui kaedah pilihan anda.",
+    tl: "Ipinadala na ng ORCA ang iyong {req} sa mga napiling partner at aktibong distribution channel. Makikipag-ugnayan sila gamit ang napili mong paraan.",
+    zh: "ORCA 已将您的{req}发送给所选合作伙伴和活跃的分发渠道。他们将通过您选择的联系方式与您联系。",
+    my: "ORCA သည် သင်၏ {req} ကို ရွေးချယ်ထားသော မိတ်ဖက်များနှင့် တက်ကြွသော ဖြန့်ဖြူးရေးလမ်းကြောင်းများထံ ပို့ပြီးပါပြီ။ သင်ရွေးချယ်ထားသော နည်းဖြင့် ဆက်သွယ်ပါမည်။",
   },
   request: { id: "permintaan", ms: "permintaan", tl: "kahilingan", zh: "请求", my: "တောင်းဆိုချက်" },
   requests: { id: "permintaan", ms: "permintaan", tl: "mga kahilingan", zh: "请求", my: "တောင်းဆိုချက်များ" },
@@ -211,12 +211,12 @@ export const chrome: Dict = {
   "No suitable partner available": { id: "Tidak ada mitra yang cocok", ms: "Tiada rakan kongsi sesuai", tl: "Walang angkop na partner", zh: "暂无合适的合作伙伴", my: "သင့်လျော်သော မိတ်ဖက် မရှိပါ" },
   "Backup partners": { id: "Mitra cadangan", ms: "Rakan kongsi sandaran", tl: "Mga backup na partner", zh: "备用合作伙伴", my: "အရန် မိတ်ဖက်များ" },
   "About backup partners": { id: "Tentang mitra cadangan", ms: "Mengenai rakan kongsi sandaran", tl: "Tungkol sa mga backup na partner", zh: "关于备用合作伙伴", my: "အရန်မိတ်ဖက်များ အကြောင်း" },
-  "I understand CARA will share my contact and request details with the selected partners.": {
-    id: "Saya memahami CARA akan membagikan detail kontak dan permintaan saya kepada mitra terpilih.",
-    ms: "Saya faham CARA akan berkongsi butiran hubungan dan permintaan saya dengan rakan kongsi terpilih.",
-    tl: "Naiintindihan ko na ibabahagi ng CARA ang aking contact at detalye ng kahilingan sa mga napiling partner.",
-    zh: "我了解 CARA 会将我的联系方式和请求详情分享给所选合作伙伴。",
-    my: "CARA သည် ကျွန်ုပ်၏ ဆက်သွယ်ရန်နှင့် တောင်းဆိုမှု အချက်အလက်များကို ရွေးချယ်ထားသော မိတ်ဖက်များထံ မျှဝေမည်ကို နားလည်ပါသည်။",
+  "I understand ORCA will share my contact and request details with the selected partners.": {
+    id: "Saya memahami ORCA akan membagikan detail kontak dan permintaan saya kepada mitra terpilih.",
+    ms: "Saya faham ORCA akan berkongsi butiran hubungan dan permintaan saya dengan rakan kongsi terpilih.",
+    tl: "Naiintindihan ko na ibabahagi ng ORCA ang aking contact at detalye ng kahilingan sa mga napiling partner.",
+    zh: "我了解 ORCA 会将我的联系方式和请求详情分享给所选合作伙伴。",
+    my: "ORCA သည် ကျွန်ုပ်၏ ဆက်သွယ်ရန်နှင့် တောင်းဆိုမှု အချက်အလက်များကို ရွေးချယ်ထားသော မိတ်ဖက်များထံ မျှဝေမည်ကို နားလည်ပါသည်။",
   },
   "For paid goods and services, I understand that partners will confirm the final costs with me.": {
     id: "Untuk barang dan jasa berbayar, saya memahami bahwa mitra akan mengonfirmasi biaya akhir dengan saya.",
@@ -226,12 +226,12 @@ export const chrome: Dict = {
     my: "ပေးချေရသော ကုန်ပစ္စည်းနှင့် ဝန်ဆောင်မှုများအတွက် မိတ်ဖက်များသည် နောက်ဆုံးကုန်ကျစရိတ်ကို ကျွန်ုပ်နှင့် အတည်ပြုမည်ကို နားလည်ပါသည်။",
   },
   "Submit {count} {req}": { id: "Kirim {count} {req}", ms: "Hantar {count} {req}", tl: "Isumite ang {count} {req}", zh: "提交 {count} 个{req}", my: "{req} {count} ခု တင်ရန်" },
-  "If the recommended partner can't help, CARA can try these backup partners.": {
-    id: "Jika mitra yang direkomendasikan tidak bisa membantu, CARA dapat mencoba mitra cadangan ini.",
-    ms: "Jika rakan kongsi disyorkan tidak dapat membantu, CARA boleh mencuba rakan kongsi sandaran ini.",
-    tl: "Kung hindi makakatulong ang inirerekomendang partner, maaaring subukan ng CARA ang mga backup na ito.",
-    zh: "如果推荐的合作伙伴无法帮忙，CARA 可以尝试这些备用合作伙伴。",
-    my: "အကြံပြုထားသော မိတ်ဖက်က မကူညီနိုင်ပါက CARA သည် ဤအရန်မိတ်ဖက်များကို စမ်းကြည့်နိုင်သည်။",
+  "If the recommended partner can't help, ORCA can try these backup partners.": {
+    id: "Jika mitra yang direkomendasikan tidak bisa membantu, ORCA dapat mencoba mitra cadangan ini.",
+    ms: "Jika rakan kongsi disyorkan tidak dapat membantu, ORCA boleh mencuba rakan kongsi sandaran ini.",
+    tl: "Kung hindi makakatulong ang inirerekomendang partner, maaaring subukan ng ORCA ang mga backup na ito.",
+    zh: "如果推荐的合作伙伴无法帮忙，ORCA 可以尝试这些备用合作伙伴。",
+    my: "အကြံပြုထားသော မိတ်ဖက်က မကူညီနိုင်ပါက ORCA သည် ဤအရန်မိတ်ဖက်များကို စမ်းကြည့်နိုင်သည်။",
   },
   "Choose a primary partner": { id: "Pilih mitra utama", ms: "Pilih rakan kongsi utama", tl: "Pumili ng pangunahing partner", zh: "选择主要合作伙伴", my: "အဓိက မိတ်ဖက် ရွေးရန်" },
   "Note:": { id: "Catatan:", ms: "Nota:", tl: "Tala:", zh: "注：", my: "မှတ်ချက်:" },

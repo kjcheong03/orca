@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { Check, MapPin, Minus, RefreshCw, TrendingDown, TrendingUp, X } from "lucide-react";
 import AdvisoryCarousel from "@/components/AdvisoryCarousel";
-import AskCaraChat from "@/components/AskCaraChat";
+import AskOrcaChat from "@/components/AskOrcaChat";
 import CalendarFab from "@/components/CalendarFab";
 import HazardDropdown from "@/components/HazardDropdown";
 import MediaCarousel from "@/components/MediaCarousel";
@@ -280,7 +280,7 @@ export default function InfoScreen() {
         <button
           type="button"
           onClick={() => setChatOpen(true)}
-          aria-label="Ask CARA"
+          aria-label="Ask ORCA"
           className="transition-transform active:scale-95"
         >
           <Mascot variant={mascot} size={168} />
@@ -325,7 +325,7 @@ export default function InfoScreen() {
         )}
       </motion.div>
 
-      <AskCaraChat open={chatOpen} onClose={() => setChatOpen(false)} hazard={hazard} date={date} />
+      <AskOrcaChat open={chatOpen} onClose={() => setChatOpen(false)} hazard={hazard} date={date} />
     </div>
   );
 }

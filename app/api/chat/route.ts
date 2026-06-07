@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       ],
       response_format: {
         type: "json_schema",
-        json_schema: { name: "CaraReply", schema: replySchema, strict: true },
+        json_schema: { name: "OrcaReply", schema: replySchema, strict: true },
       },
     });
 

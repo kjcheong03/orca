@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
 // Real authority broadcasts, read server-side from the shared Supabase project.
 //
-// The CARA Authority Dashboard writes approved broadcasts into the `broadcasts`
+// The ORCA Authority Dashboard writes approved broadcasts into the `broadcasts`
 // table (service-role). This route reads the latest sent broadcasts and maps
-// them onto CARA's Broadcast shape so the banner + sheet show real advisories.
+// them onto ORCA's Broadcast shape so the banner + sheet show real advisories.
 // Service-role only — the browser never queries Supabase directly.
 // ---------------------------------------------------------------------------
 
@@ -96,7 +96,7 @@ function formatSgt(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   const tz = "Asia/Singapore";
-  // en-US gives uppercase AM/PM to match CARA's existing broadcast style.
+  // en-US gives uppercase AM/PM to match ORCA's existing broadcast style.
   const time = d.toLocaleTimeString("en-US", { timeZone: tz, hour: "numeric", minute: "2-digit", hour12: true });
   const dayKey = d.toLocaleDateString("en-CA", { timeZone: tz });
   const todayKey = new Date().toLocaleDateString("en-CA", { timeZone: tz });

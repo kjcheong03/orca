@@ -912,7 +912,7 @@ export const caregiver = {
  */
 export function saveRequestSession(session: RequestSession): void {
   // eslint-disable-next-line no-console
-  console.log("CARA request session →", session);
+  console.log("ORCA request session →", session);
 }
 
 /**

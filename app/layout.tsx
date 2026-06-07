@@ -21,10 +21,10 @@ const fonts = { inter, dmSans };
 const appFont = fonts.dmSans;
 
 export const metadata: Metadata = {
-  applicationName: "CARA",
-  title: "CARA — Crisis-Aware Response Assistant",
+  applicationName: "ORCA",
+  title: "ORCA — Outreach, Resource & Caregiver Assistance",
   description:
-    "Crisis-Aware Response Assistant: a caregiver-first companion that turns public health advisories into clear, personalised actions. Frontend prototype.",
+    "Outreach, Resource & Caregiver Assistance: a caregiver-first companion that turns public health advisories into clear, personalised actions. Frontend prototype.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   // iOS standalone ("Add to Home Screen") behaviour.
   appleWebApp: {
     capable: true,
-    title: "CARA",
+    title: "ORCA",
     statusBarStyle: "default",
   },
 };

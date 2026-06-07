@@ -13,7 +13,7 @@ import type { Language } from "@/lib/types";
 const shortName = patient.name.split(" ").slice(0, 2).join(" "); // "Madam Tan"
 
 interface Msg {
-  role: "cara" | "user";
+  role: "orca" | "user";
   text: string;
   videoId?: string | null;
 }
@@ -37,7 +37,7 @@ const CHAT_UI: Record<Language, Ui> = {
   en: {
     greeting: (n) => `Hi — I'm reading today's updates for ${n}. What would you like to understand?`,
     placeholder: (n) => `Ask about ${n}…`,
-    typing: "CARA is typing…",
+    typing: "ORCA is typing…",
     listening: "Listening…",
     transcribing: "Transcribing…",
     readAloud: "Read aloud",
@@ -52,7 +52,7 @@ const CHAT_UI: Record<Language, Ui> = {
   id: {
     greeting: (n) => `Hai — saya sedang membaca info terbaru untuk ${n}. Ada yang ingin Anda tanyakan?`,
     placeholder: (n) => `Tanya tentang ${n}…`,
-    typing: "CARA sedang mengetik…",
+    typing: "ORCA sedang mengetik…",
     listening: "Mendengarkan…",
     transcribing: "Menyalin…",
     readAloud: "Bacakan",
@@ -67,7 +67,7 @@ const CHAT_UI: Record<Language, Ui> = {
   ms: {
     greeting: (n) => `Hai — saya sedang membaca maklumat terkini untuk ${n}. Apa yang ingin anda tahu?`,
     placeholder: (n) => `Tanya tentang ${n}…`,
-    typing: "CARA sedang menaip…",
+    typing: "ORCA sedang menaip…",
     listening: "Mendengar…",
     transcribing: "Menyalin…",
     readAloud: "Baca kuat",
@@ -82,7 +82,7 @@ const CHAT_UI: Record<Language, Ui> = {
   tl: {
     greeting: (n) => `Kumusta po — binabasa ko po ang mga update ngayon para kay ${n}. Ano po ang gusto ninyong malaman?`,
     placeholder: (n) => `Magtanong tungkol kay ${n}…`,
-    typing: "Nagta-type si CARA…",
+    typing: "Nagta-type si ORCA…",
     listening: "Nakikinig…",
     transcribing: "Ginagawang teksto…",
     readAloud: "Basahin nang malakas",
@@ -97,7 +97,7 @@ const CHAT_UI: Record<Language, Ui> = {
   zh: {
     greeting: (n) => `您好 — 我正在查看${n}今天的最新情况。您想了解什么？`,
     placeholder: (n) => `询问关于${n}的事…`,
-    typing: "CARA 正在输入…",
+    typing: "ORCA 正在输入…",
     listening: "正在聆听…",
     transcribing: "正在转写…",
     readAloud: "朗读",
@@ -112,7 +112,7 @@ const CHAT_UI: Record<Language, Ui> = {
   my: {
     greeting: (n) => `မင်္ဂလာပါ — ${n} အတွက် ယနေ့ အချက်အလက်များကို ဖတ်နေပါသည်။ ဘာသိချင်ပါသလဲ?`,
     placeholder: (n) => `${n} အကြောင်း မေးပါ…`,
-    typing: "CARA ရိုက်နေသည်…",
+    typing: "ORCA ရိုက်နေသည်…",
     listening: "နားထောင်နေသည်…",
     transcribing: "စာသားပြောင်းနေသည်…",
     readAloud: "အသံဖတ်ပြ",
@@ -126,7 +126,7 @@ const CHAT_UI: Record<Language, Ui> = {
   },
 };
 
-export default function AskCaraChat({
+export default function AskOrcaChat({
   open,
   onClose,
   hazard,
@@ -156,7 +156,7 @@ export default function AskCaraChat({
   // Greet fresh each time the panel opens, in the active language.
   useEffect(() => {
     if (!open) return;
-    setMessages([{ role: "cara", text: ui.greeting(shortName) }]);
+    setMessages([{ role: "orca", text: ui.greeting(shortName) }]);
     setInput("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -197,7 +197,7 @@ export default function AskCaraChat({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: history.map((m) => ({ role: m.role === "cara" ? "assistant" : "user", text: m.text })),
+          messages: history.map((m) => ({ role: m.role === "orca" ? "assistant" : "user", text: m.text })),
           lang,
           hazard,
           date,
@@ -205,9 +205,9 @@ export default function AskCaraChat({
       });
       const data = await res.json();
       if (!res.ok || !data.reply) throw new Error(data.error ?? "no reply");
-      setMessages((m) => [...m, { role: "cara", text: data.reply, videoId: data.videoId ?? null }]);
+      setMessages((m) => [...m, { role: "orca", text: data.reply, videoId: data.videoId ?? null }]);
     } catch {
-      setMessages((m) => [...m, { role: "cara", text: ui.error }]);
+      setMessages((m) => [...m, { role: "orca", text: ui.error }]);
     } finally {
       setSending(false);
     }
@@ -244,7 +244,7 @@ export default function AskCaraChat({
       rec.start();
       setRecording(true);
     } catch {
-      setMessages((m) => [...m, { role: "cara", text: ui.micError }]);
+      setMessages((m) => [...m, { role: "orca", text: ui.micError }]);
       setRecording(false);
     }
   }
@@ -304,7 +304,7 @@ export default function AskCaraChat({
       className="fade-enter fixed inset-0 z-50 flex items-end justify-center sm:items-center"
       role="dialog"
       aria-modal="true"
-      aria-label="Ask CARA"
+      aria-label="Ask ORCA"
     >
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/40" />
 
@@ -312,7 +312,7 @@ export default function AskCaraChat({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-black/5 bg-card px-5 py-3.5">
           <div>
-            <p className="text-[16px] font-extrabold text-ink">Ask CARA</p>
+            <p className="text-[16px] font-extrabold text-ink">Ask ORCA</p>
             <p className="text-[11px] text-faint">{ui.voiceNote}</p>
           </div>
           <button
@@ -332,7 +332,7 @@ export default function AskCaraChat({
             return (
               <div key={i} className="space-y-2">
                 <div className={`flex items-end gap-2 ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                  {m.role === "cara" && (
+                  {m.role === "orca" && (
                     <span className="-mb-1 shrink-0">
                       <Mascot size={34} variant="cheer" animated={false} />
                     </span>
@@ -347,7 +347,7 @@ export default function AskCaraChat({
                     >
                       {m.text}
                     </p>
-                    {m.role === "cara" && (
+                    {m.role === "orca" && (
                       <button
                         type="button"
                         onClick={() => speak(i, m.text)}

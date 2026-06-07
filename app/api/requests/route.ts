@@ -24,7 +24,7 @@ function intOf(v: unknown, fallback = 1): number {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
-/** Map CARA dietary restrictions → a single MOW inventory variant slug. */
+/** Map ORCA dietary restrictions → a single MOW inventory variant slug. */
 function dietaryVariant(restrictions: unknown): string {
   const map: Record<string, string> = {
     Halal: "halal",

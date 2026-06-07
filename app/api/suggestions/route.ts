@@ -3,7 +3,7 @@
 //
 // Grounds the model in the care recipient's profile + the current hazard
 // situation and generates 3–4 personalised caregiver actions + a "why", in
-// EVERY CARA app language at once. The Info screen caches per situation and the
+// EVERY ORCA app language at once. The Info screen caches per situation and the
 // reload button forces a fresh generation.
 //
 // Body: { hazard: "covid" | "dengue", date: string }

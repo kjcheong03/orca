@@ -1,6 +1,6 @@
-# CARA — community health companion
+# ORCA — community health companion
 
-CARA is a phone app for caregivers looking after elderly or vulnerable people in
+ORCA is a phone app for caregivers looking after elderly or vulnerable people in
 Singapore during health threats like **COVID-19** and **dengue**. It pulls
 together public health information and turns it into plain, personalised advice
 for the person you care for
@@ -15,7 +15,7 @@ The app has **4 tabs**:
 
 1. **Info** — the home screen.
    - Pick a date and switch between **COVID** or **Dengue**.
-   - CARA shows the current situation using **real Singapore government data**
+   - ORCA shows the current situation using **real Singapore government data**
      (data.gov.sg) and gives **tailored suggestions** based on the care
      recipient's health profile (e.g. extra caution for diabetes).
    - For dengue, a **map** shows nearby clusters around the person's home.

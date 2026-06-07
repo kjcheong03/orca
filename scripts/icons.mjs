@@ -1,4 +1,4 @@
-// Generate PWA icons from the CARA mascot (the "cheer" face) using sharp.
+// Generate PWA icons from the ORCA mascot (the "cheer" face) using sharp.
 // Run:  node scripts/icons.mjs   → writes PNGs into public/icons/
 //
 // Produces: standard 192/512, maskable 192/512 (extra padding for the safe

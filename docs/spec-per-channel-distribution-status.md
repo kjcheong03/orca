@@ -1,7 +1,7 @@
 # Spec — Per-channel distribution status (dashboard repo)
 
 **Audience:** the agent on `cara-community-dashboard`.
-**Author:** CARA app side. **Status:** ready to implement.
+**Author:** ORCA app side. **Status:** ready to implement.
 **Why:** a supplies request fans out to multiple distribution channels (e.g. Masks → Temasek,
 ART kits → MOH). Today they share **one** task-level status, so "masks collected, ART kits
 not yet" can't be expressed. We want each distribution **route** independently advanceable and
@@ -40,7 +40,7 @@ So the per-route machinery is mostly there; the lifecycle source + the constrain
 1. **Constraint** — drop/replace `request_routes_distribution_has_no_lifecycle` so distribution
    routes may carry a lifecycle. Give distribution routes a **default `'Pending'`** (column
    default or insert trigger) so `lifecycle` is never null for them — this avoids the
-   read-from-task fallback ambiguity in step 2. (CARA will also start sending
+   read-from-task fallback ambiguity in step 2. (ORCA will also start sending
    `lifecycle: 'Pending'` for distribution routes once the constraint is lifted — see below.)
 
 2. **`route_effective_status`** — for distribution routes return
@@ -52,7 +52,7 @@ So the per-route machinery is mostly there; the lifecycle source + the constrain
    Cancelled]`. Wire the route status-change action to pass `'reduced'` for non-`partner_service`
    routes. *(Optional: add `'In progress'` = "ready for collection / out for delivery" to the
    reduced set — here and in `TRANSITIONS.reduced` in the contract — if you want a mid-state.
-   CARA will display it. Default: keep binary `Pending → Completed`.)*
+   ORCA will display it. Default: keep binary `Pending → Completed`.)*
 
 4. **Task / session rollup** — extend `task_effective_status` so route-based tasks roll up **all**
    routes' effective statuses (partner_service **and** distribution), not just partner_service;
@@ -70,7 +70,7 @@ So the per-route machinery is mostly there; the lifecycle source + the constrain
 
 ---
 
-## Shared contract (`lib/contract.ts` — both repos; CARA will re-sync)
+## Shared contract (`lib/contract.ts` — both repos; ORCA will re-sync)
 
 - `WorkItem.kind`: add `"supplies-route"`. Change `flattenToWorkItems` to emit one
   `supplies-route` item **per distribution route** (status = `route.lifecycle ?? 'Pending'`,
@@ -78,12 +78,12 @@ So the per-route machinery is mostly there; the lifecycle source + the constrain
   null). This replaces the current single task-level `supplies-task` item.
 - Already present and ready to use: `FulfilmentRoute.lifecycle`, `TRANSITIONS.reduced`,
   `isDistributionTask`, `taskStatus`.
-- **Re-sync note:** CARA's contract now also exports `taskStatus()` and `isDistributionTask()` —
+- **Re-sync note:** ORCA's contract now also exports `taskStatus()` and `isDistributionTask()` —
   pull the latest copy.
 
 ---
 
-## After it lands (CARA side — we do this)
+## After it lands (ORCA side — we do this)
 
 - In `app/api/requests/route.ts`, send `lifecycle: 'Pending'` for distribution routes on submit
   (currently null).

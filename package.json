@@ -1,8 +1,8 @@
 {
-  "name": "cara",
+  "name": "orca",
   "version": "0.1.0",
   "private": true,
-  "description": "CARA — community health companion (frontend prototype)",
+  "description": "ORCA — community health companion (frontend prototype)",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

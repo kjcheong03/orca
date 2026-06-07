@@ -1,4 +1,4 @@
-// Domain types for the CARA prototype. Frontend-only — these describe the
+// Domain types for the ORCA prototype. Frontend-only — these describe the
 // shape of the mock data in lib/data.ts.
 
 export type Severity = "URGENT" | "PRECAUTIONARY" | "INFO";
@@ -62,7 +62,7 @@ export interface Broadcast {
   time: string;
   /** Authority urgency, when sourced from a real broadcast. */
   urgency?: "HIGH" | "NORMAL";
-  /** Per-language versions keyed by CARA language code (zh, ms, id, tl, my).
+  /** Per-language versions keyed by ORCA language code (zh, ms, id, tl, my).
    *  English is the base (title/body); other languages come from the authority. */
   translations?: Record<string, { title: string; body: string }>;
 }

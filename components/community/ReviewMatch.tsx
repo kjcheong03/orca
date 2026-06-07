@@ -291,7 +291,7 @@ export default function ReviewMatch({
           <h2 className="display mt-3 text-[20px] text-ink">{tx("Request sent")}</h2>
           <p className="mt-2.5 text-[13.5px] leading-relaxed text-muted">
             {txf(
-              "CARA has sent your {req} to the selected partners and active distribution channels. They'll reach out via your chosen contact method.",
+              "ORCA has sent your {req} to the selected partners and active distribution channels. They'll reach out via your chosen contact method.",
               { req: reqWord },
             )}
           </p>
@@ -443,7 +443,7 @@ export default function ReviewMatch({
           <Checkbox on={acknowledged} />
         </span>
         <span className="text-[13.5px] leading-snug text-body">
-          {tx("I understand CARA will share my contact and request details with the selected partners.")}
+          {tx("I understand ORCA will share my contact and request details with the selected partners.")}
         </span>
       </button>
 
@@ -492,7 +492,7 @@ export default function ReviewMatch({
           <div className="pop-enter relative w-full max-w-sm rounded-[24px] bg-card p-6">
             <p className="text-[15px] font-bold text-ink">{tx("Backup partners")}</p>
             <p className="mt-2 text-[14px] leading-relaxed text-body">
-              {tx("If the recommended partner can't help, CARA can try these backup partners.")}
+              {tx("If the recommended partner can't help, ORCA can try these backup partners.")}
             </p>
             <button
               type="button"

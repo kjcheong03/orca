@@ -1,13 +1,13 @@
 import type { MetadataRoute } from "next";
 
-// Web app manifest — makes CARA installable to the home screen. Next serves
+// Web app manifest — makes ORCA installable to the home screen. Next serves
 // this at /manifest.webmanifest and links it automatically.
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "CARA — Crisis-Aware Response Assistant",
-    short_name: "CARA",
+    name: "ORCA — Outreach, Resource & Caregiver Assistance",
+    short_name: "ORCA",
     description:
-      "Crisis-Aware Response Assistant: a caregiver-first companion that turns public health advisories into clear, personalised actions.",
+      "Outreach, Resource & Caregiver Assistance: a caregiver-first companion that turns public health advisories into clear, personalised actions.",
     start_url: "/",
     scope: "/",
     display: "standalone",

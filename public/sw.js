@@ -1,9 +1,9 @@
-// CARA service worker — enables install-to-home-screen and light offline.
+// ORCA service worker — enables install-to-home-screen and light offline.
 // Strategy: network-first for page navigations (so content stays fresh, with a
 // cached fallback when offline); stale-while-revalidate for same-origin static
 // assets. API calls and cross-origin (Supabase media) always go to the network.
 
-const CACHE = "cara-v1";
+const CACHE = "orca-v1";
 const OFFLINE_URL = "/";
 
 self.addEventListener("install", (event) => {

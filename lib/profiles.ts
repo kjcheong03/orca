@@ -59,7 +59,25 @@ export function ensureAddressParts(p: ElderProfile): ElderProfile {
   return { ...p, ...parseAddress(p.address ?? "") };
 }
 
-const KEY = "cara-elder-profiles";
+/**
+ * One-time migration: the app was formerly named "CARA". Carry over any
+ * locally-saved data from the old "cara-*" localStorage keys to the new
+ * "orca-*" keys so existing users keep their data after the rename.
+ */
+function migrateLegacyKey(oldKey: string, newKey: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (window.localStorage.getItem(newKey) !== null) return; // already on the new key
+    const legacy = window.localStorage.getItem(oldKey);
+    if (legacy === null) return;
+    window.localStorage.setItem(newKey, legacy);
+    window.localStorage.removeItem(oldKey);
+  } catch {
+    /* ignore in the prototype */
+  }
+}
+
+const KEY = "orca-elder-profiles";
 
 // Caregiver notes that used to live in the Profile screen.
 export const DEFAULT_NOTES = [
@@ -90,6 +108,7 @@ export function defaultProfiles(): ElderProfile[] {
 
 export function loadProfiles(): ElderProfile[] {
   if (typeof window === "undefined") return defaultProfiles();
+  migrateLegacyKey("cara-elder-profiles", KEY);
   try {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return defaultProfiles();
@@ -112,10 +131,11 @@ export function saveProfiles(profiles: ElderProfile[]): void {
 // --- active profile (the elderly currently selected on the Profile screen) ---
 // Persisted so other screens (e.g. Contacts) can show / send the same person.
 // (A shared store is the cleaner long-term home — that's the backend wiring.)
-const ACTIVE_KEY = "cara-active-elder";
+const ACTIVE_KEY = "orca-active-elder";
 
 export function loadActiveId(): string {
   if (typeof window === "undefined") return "p-default";
+  migrateLegacyKey("cara-active-elder", ACTIVE_KEY);
   try {
     return window.localStorage.getItem(ACTIVE_KEY) || "p-default";
   } catch {
@@ -149,7 +169,7 @@ export interface CaregiverProfile {
   email: string;
 }
 
-const CAREGIVER_KEY = "cara-caregiver";
+const CAREGIVER_KEY = "orca-caregiver";
 
 /** Mock defaults — the same caregiver we use throughout the prototype. */
 export function defaultCaregiver(): CaregiverProfile {
@@ -158,6 +178,7 @@ export function defaultCaregiver(): CaregiverProfile {
 
 export function loadCaregiver(): CaregiverProfile {
   if (typeof window === "undefined") return defaultCaregiver();
+  migrateLegacyKey("cara-caregiver", CAREGIVER_KEY);
   try {
     const raw = window.localStorage.getItem(CAREGIVER_KEY);
     if (!raw) return defaultCaregiver();

@@ -28,9 +28,9 @@ export default function Sidebar() {
         </span>
         <span>
           <span className="block text-[17px] font-extrabold tracking-tight text-ink">
-            CARA
+            ORCA
           </span>
-          <span className="block text-[12px] leading-snug text-muted">Crisis-Aware Response Assistant</span>
+          <span className="block text-[12px] leading-snug text-muted">Outreach, Resource & Caregiver Assistance</span>
         </span>
       </div>
 

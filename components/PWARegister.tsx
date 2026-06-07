@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-/** Registers the service worker so CARA is installable + works offline. */
+/** Registers the service worker so ORCA is installable + works offline. */
 export default function PWARegister() {
   useEffect(() => {
     // Only in production — a caching SW interferes with dev hot-reload.

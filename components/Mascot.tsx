@@ -5,13 +5,13 @@ import { motion } from "framer-motion";
 export type MascotMood = "calm" | "cheer" | "concerned";
 
 /**
- * CARA's mascot — a soft "hooded blob": a big white face peeking out of a
+ * ORCA's mascot — a soft "hooded blob": a big white face peeking out of a
  * rounded blue body with tiny stub arms and pale feet.
  *   calm      — slow breathing float, closed happy eyes
  *   cheer     — bouncier float, open eyes, bigger smile
  *   concerned — gentle float, open eyes, slight frown (elevated risk)
  *
- * Based 1:1 on the CARA "my-current-work" branch (CaraMascot), with an added
+ * Based 1:1 on the ORCA "my-current-work" branch (OrcaMascot), with an added
  * "concerned" mood so the face reacts to the risk tier.
  */
 export default function Mascot({
@@ -38,7 +38,7 @@ export default function Mascot({
       height={size}
       viewBox="0 0 180 170"
       role="img"
-      aria-label="CARA companion"
+      aria-label="ORCA companion"
       xmlns="http://www.w3.org/2000/svg"
       animate={
         !animated

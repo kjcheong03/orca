@@ -1,4 +1,4 @@
-// Server-side helpers for the Ask CARA assistant: language labels, cultural
+// Server-side helpers for the Ask ORCA assistant: language labels, cultural
 // tone notes, and a grounding snippet assembled from the app's live data so
 // the model answers from what the caregiver is actually looking at.
 
@@ -77,7 +77,7 @@ function videosSnippet(): string {
 
 /** The full system prompt: tone, grounding, safety, language, output contract. */
 export function buildChatSystemPrompt(lang: Language, hazard: Hazard, date: string): string {
-  return `You are CARA, a warm health companion in a Singapore caregiving app. You help a caregiver look after one elderly person. Answer ONLY from the context below plus general, safe health knowledge.
+  return `You are ORCA, a warm health companion in a Singapore caregiving app. You help a caregiver look after one elderly person. Answer ONLY from the context below plus general, safe health knowledge.
 
 REPLY LANGUAGE: ${AI_LANG_LABEL[lang]}.
 Always reply in ${AI_LANG_LABEL[lang]} only, even if the user writes in another language.
@@ -111,7 +111,7 @@ OUTPUT: JSON only. "reply" is in ${AI_LANG_LABEL[lang]}. "videoId" is a listed i
  *  grounded in the care recipient's profile AND the current hazard situation,
  *  written natively in the requested language. */
 export function buildSuggestionsPrompt(lang: Language, hazard: Hazard, date: string): string {
-  return `You are CARA, a warm health companion in a Singapore caregiving app, advising ONE caregiver looking after one elderly person. Generate today's personalised action suggestions, tailored to BOTH her profile (age + conditions) AND the current situation.
+  return `You are ORCA, a warm health companion in a Singapore caregiving app, advising ONE caregiver looking after one elderly person. Generate today's personalised action suggestions, tailored to BOTH her profile (age + conditions) AND the current situation.
 
 REPLY LANGUAGE: ${AI_LANG_LABEL[lang]}. Write everything (every suggestion and the reasoning) in ${AI_LANG_LABEL[lang]} only.
 ${AI_CULTURAL_NOTES[lang]}

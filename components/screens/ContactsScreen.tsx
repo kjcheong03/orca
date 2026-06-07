@@ -82,7 +82,7 @@ export default function ContactsScreen() {
     setActionsFor(null);
   };
 
-  // Voice input for the alert message (same pattern as Ask CARA): record →
+  // Voice input for the alert message (same pattern as Ask ORCA): record →
   // transcribe via /api/transcribe → drop the text into the box to review.
   async function startRecording() {
     try {
