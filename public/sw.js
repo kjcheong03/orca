@@ -1,9 +1,13 @@
 // ORCA service worker — enables install-to-home-screen and light offline.
-// Strategy: network-first for page navigations (so content stays fresh, with a
-// cached fallback when offline); stale-while-revalidate for same-origin static
-// assets. API calls and cross-origin (Supabase media) always go to the network.
+//
+// Strategy: NETWORK-FIRST EVERYWHERE for same-origin GETs so every reload
+// pulls the freshest bundle when online. Cache is purely an offline fallback
+// (the most recent successful network response is mirrored into it). API calls
+// and cross-origin (Supabase media) always go straight to the network. This is
+// safer than stale-while-revalidate during active development — there's no
+// "saw the old code one more time after a redeploy" window.
 
-const CACHE = "orca-v3";
+const CACHE = "orca-v4";
 const OFFLINE_URL = "/";
 
 // --- Offline request outbox (Background Sync) ------------------------------
@@ -113,19 +117,19 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Static assets: serve from cache, refresh in the background.
+  // Static assets: NETWORK-FIRST. Every fetch goes to the network; the response
+  // is mirrored into the cache only so the page can still load when offline.
+  // No more "I just got served the cached old chunk while the network update
+  // happened in the background and won't show until next reload."
   event.respondWith(
-    caches.match(request).then((cached) => {
-      const network = fetch(request)
-        .then((res) => {
-          if (res && res.status === 200) {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(request, copy)).catch(() => {});
-          }
-          return res;
-        })
-        .catch(() => cached);
-      return cached || network;
-    })
+    fetch(request)
+      .then((res) => {
+        if (res && res.status === 200) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(request, copy)).catch(() => {});
+        }
+        return res;
+      })
+      .catch(() => caches.match(request).then((r) => r || Response.error()))
   );
 });
