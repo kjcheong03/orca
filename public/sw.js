@@ -3,7 +3,7 @@
 // cached fallback when offline); stale-while-revalidate for same-origin static
 // assets. API calls and cross-origin (Supabase media) always go to the network.
 
-const CACHE = "orca-v2";
+const CACHE = "orca-v3";
 const OFFLINE_URL = "/";
 
 // --- Offline request outbox (Background Sync) ------------------------------
