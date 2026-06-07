@@ -261,7 +261,10 @@ export default function InfoScreen() {
   const isCovid = hazard === "covid";
   const cov = isCovid ? getScenario("covid", date) : null;
   const den = isCovid ? null : getDengueScenario();
-  const mascot = isCovid ? cov!.mascot : den!.mascot;
+  const rawMood = isCovid ? cov!.mascot : den!.mascot;
+  // Keep the Info-screen mascot reassuring — never the worried face, even at
+  // elevated risk. The risk level is still conveyed by the tier badge + cards.
+  const mascot = rawMood === "concerned" ? "calm" : rawMood;
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-5 px-4 pb-8 pt-4 lg:px-8 lg:pt-8">

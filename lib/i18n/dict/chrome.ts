@@ -26,6 +26,7 @@ export const chrome: Dict = {
   Yes: { id: "Ya", ms: "Ya", tl: "Oo", zh: "是", my: "ဟုတ်ကဲ့" },
 
   // --- offline / connectivity ---
+  Dismiss: { id: "Tutup", ms: "Tutup", tl: "Isara", zh: "关闭", my: "ပိတ်ရန်" },
   "You're offline — emergency info and contacts still work.": {
     id: "Anda sedang offline — info darurat dan kontak tetap berfungsi.",
     ms: "Anda di luar talian — maklumat kecemasan dan kenalan masih berfungsi.",
