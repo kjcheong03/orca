@@ -193,7 +193,7 @@ export const chrome: Dict = {
   },
   Supplies: { id: "Perlengkapan", ms: "Bekalan", tl: "Mga Supply", zh: "物资", my: "ပစ္စည်းများ", ta: "பொருட்கள்" },
   Meals: { id: "Makanan", ms: "Makanan", tl: "Pagkain", zh: "餐食", my: "အစားအစာ", ta: "உணவு" },
-  "Welfare check": { id: "Cek kesejahteraan", ms: "Pemeriksaan kebajikan", tl: "Welfare check", zh: "关怀探访", my: "ကျန်းမာရေး စစ်ဆေးခြင်း", ta: "நலன் விசாரிப்பு" },
+  "Welfare check": { id: "Cek kesejahteraan", ms: "Pemeriksaan kebajikan", tl: "Pagtingin sa kalagayan", zh: "关怀探访", my: "ကျန်းမာရေး စစ်ဆေးခြင်း", ta: "நலன் விசாரிப்பு" },
   Transport: { id: "Transportasi", ms: "Pengangkutan", tl: "Transportasyon", zh: "交通", my: "သယ်ယူပို့ဆောင်ရေး", ta: "போக்குவரத்து" },
   "Care referral": { id: "Rujukan perawatan", ms: "Rujukan penjagaan", tl: "Care referral", zh: "护理转介", my: "စောင့်ရှောက်မှု ညွှန်း", ta: "சேவை பரிந்துரை" },
   "Request help": { id: "Minta bantuan", ms: "Minta bantuan", tl: "Humingi ng tulong", zh: "请求协助", my: "အကူအညီ တောင်းရန်", ta: "உதவி கோரவும்" },
@@ -418,4 +418,27 @@ export const chrome: Dict = {
   "Translate message": { id: "Terjemahkan pesan", ms: "Terjemah mesej", tl: "Isalin ang mensahe", zh: "翻译信息", my: "စာတို ဘာသာပြန်ရန်", ta: "செய்தியை மொழிபெயர்க்கவும்" },
   "Send in": { id: "Kirim dalam", ms: "Hantar dalam", tl: "Ipadala sa", zh: "发送语言", my: "ဘာသာဖြင့် ပို့ရန်", ta: "இந்த மொழியில் அனுப்பு" },
   "Translating…": { id: "Menerjemahkan…", ms: "Menterjemah…", tl: "Isinasalin…", zh: "正在翻译…", my: "ဘာသာပြန်နေသည်…", ta: "மொழிபெயர்க்கிறது…" },
+
+  // --- alert message helper (Contacts) ---
+  "You can attach this alert message when you SMS an emergency contact below.": {
+    id: "Anda dapat melampirkan pesan peringatan ini saat mengirim SMS ke kontak darurat di bawah.",
+    ms: "Anda boleh sertakan mesej amaran ini apabila menghantar SMS kepada hubungan kecemasan di bawah.",
+    tl: "Maaari mong ilakip ang mensaheng alerto na ito kapag nag-SMS ka sa isang emergency contact sa ibaba.",
+    zh: "您在下方向紧急联系人发送短信时，可以附上这条警示信息。",
+    my: "အောက်ပါ အရေးပေါ် ဆက်သွယ်ရန်ထံ SMS ပို့သည့်အခါ ဤသတိပေးစာတိုကို ပူးတွဲနိုင်ပါသည်။",
+    ta: "கீழே உள்ள அவசரகால தொடர்பிற்கு SMS அனுப்பும்போது இந்த எச்சரிக்கை செய்தியை இணைக்கலாம்.",
+  },
+
+  // --- request status / checkpoint / schedule pills (shown in the request log) ---
+  // Pending / Accepted / Rejected live in the "Community home" section above.
+  "In progress": { id: "Sedang diproses", ms: "Sedang diproses", tl: "Isinasagawa", zh: "进行中", my: "ဆောင်ရွက်ဆဲ", ta: "செயலில் உள்ளது" },
+  Completed: { id: "Selesai", ms: "Selesai", tl: "Tapos na", zh: "已完成", my: "ပြီးစီးပြီး", ta: "முடிந்தது" },
+  Cancelled: { id: "Dibatalkan", ms: "Dibatalkan", tl: "Kinansela", zh: "已取消", my: "ပယ်ဖျက်ပြီး", ta: "ரத்து செய்யப்பட்டது" },
+  Scheduled: { id: "Dijadwalkan", ms: "Dijadualkan", tl: "Naka-iskedyul", zh: "已安排", my: "အချိန်ဇယားဆွဲပြီး", ta: "திட்டமிடப்பட்டது" },
+  Rescheduled: { id: "Dijadwalkan ulang", ms: "Dijadual semula", tl: "Muling na-iskedyul", zh: "已改期", my: "အချိန်ပြန်ညှိပြီး", ta: "மறுதிட்டமிடப்பட்டது" },
+  Packing: { id: "Sedang dikemas", ms: "Sedang dibungkus", tl: "Iniimpake", zh: "正在打包", my: "ထုပ်ပိုးနေသည်", ta: "பொதியிடப்படுகிறது" },
+  "Ready for pickup": { id: "Siap diambil", ms: "Sedia untuk diambil", tl: "Handa nang kunin", zh: "可领取", my: "လာယူရန် အသင့်ဖြစ်ပြီ", ta: "எடுத்துச் செல்லத் தயார்" },
+  "Out for delivery": { id: "Sedang dikirim", ms: "Dalam penghantaran", tl: "Inihahatid na", zh: "正在配送", my: "ပို့ဆောင်နေသည်", ta: "வழங்கலுக்குப் புறப்பட்டது" },
+  "Meal plan confirmed": { id: "Rencana makan dikonfirmasi", ms: "Pelan makanan disahkan", tl: "Nakumpirma ang meal plan", zh: "餐食计划已确认", my: "အစားအစာ အစီအစဉ် အတည်ပြုပြီး", ta: "உணவுத் திட்டம் உறுதிசெய்யப்பட்டது" },
+  "Added to MOW schedule": { id: "Ditambahkan ke jadwal MOW", ms: "Ditambah ke jadual MOW", tl: "Naidagdag sa iskedyul ng MOW", zh: "已加入 MOW 派餐排程", my: "MOW အချိန်ဇယားတွင် ထည့်ပြီး", ta: "MOW அட்டவணையில் சேர்க்கப்பட்டது" },
 };

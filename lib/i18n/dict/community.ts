@@ -5,10 +5,10 @@ import type { Dict } from "./types";
 // (partner names, place names, brands) are intentionally left untranslated.
 export const community: Dict = {
   // --- support type labels ---
-  "Health / emergency supplies": { id: "Perlengkapan kesehatan / darurat", ms: "Bekalan kesihatan / kecemasan", tl: "Pangkalusugan / emergency supplies", zh: "健康 / 紧急物资", my: "ကျန်းမာရေး / အရေးပေါ် ပစ္စည်းများ", ta: "சுகாதார / அவசரகால பொருட்கள்" },
+  "Health / emergency supplies": { id: "Perlengkapan kesehatan / darurat", ms: "Bekalan kesihatan / kecemasan", tl: "Pangkalusugan / pang-emergency na supply", zh: "健康 / 紧急物资", my: "ကျန်းမာရေး / အရေးပေါ် ပစ္စည်းများ", ta: "சுகாதார / அவசரகால பொருட்கள்" },
   "Food / meal support": { id: "Dukungan makanan", ms: "Bantuan makanan", tl: "Suporta sa pagkain", zh: "食物 / 餐食支援", my: "အစားအစာ အကူအညီ", ta: "உணவு / சாப்பாட்டு உதவி" },
   "Assisted transport": { id: "Transportasi berbantuan", ms: "Pengangkutan berbantu", tl: "Assisted na transportasyon", zh: "陪同交通", my: "အကူအညီဖြင့် သယ်ယူပို့ဆောင်ရေး", ta: "துணையுடன் போக்குவரத்து" },
-  "Care referral / navigation": { id: "Rujukan / navigasi perawatan", ms: "Rujukan / panduan penjagaan", tl: "Care referral / navigation", zh: "护理转介 / 引导", my: "စောင့်ရှောက်မှု ညွှန်း / လမ်းညွှန်", ta: "பராமரிப்பு பரிந்துரை / வழிகாட்டல்" },
+  "Care referral / navigation": { id: "Rujukan / navigasi perawatan", ms: "Rujukan / panduan penjagaan", tl: "Referral / gabay sa pangangalaga", zh: "护理转介 / 引导", my: "စောင့်ရှောက်မှု ညွှန်း / လမ်းညွှန်", ta: "பராமரிப்பு பரிந்துரை / வழிகாட்டல்" },
 
   // --- subtypes ---
   Masks: { id: "Masker", ms: "Pelitup muka", tl: "Mask", zh: "口罩", my: "နှာခေါင်းစည်း", ta: "முகக்கவசங்கள்" },
@@ -16,7 +16,7 @@ export const community: Dict = {
   "Hand sanitiser": { id: "Hand sanitizer", ms: "Pencuci tangan", tl: "Hand sanitiser", zh: "洗手液", my: "လက်သန့်ဆေး", ta: "கைச் சுத்திகரிப்பான்" },
   "Dengue kit / repellent pack": { id: "Paket kit demam berdarah / anti-nyamuk", ms: "Kit denggi / pek penghalau nyamuk", tl: "Dengue kit / repellent pack", zh: "骨痛热症套装 / 驱蚊包", my: "သွေးလွန်တုပ်ကွေး ကိရိယာ / ခြင်ဆေး ပက်ကေ့ဂျ်", ta: "டெங்கு கருவி / கொசு விரட்டி தொகுப்பு" },
   "Cooked meals": { id: "Makanan matang", ms: "Makanan dimasak", tl: "Lutong pagkain", zh: "熟食餐", my: "ချက်ပြုတ်ထားသော အစားအစာ", ta: "சமைத்த உணவு" },
-  "Food pack / rations": { id: "Paket makanan / ransum", ms: "Pek makanan / catuan", tl: "Food pack / rations", zh: "食物包 / 口粮", my: "အစားအစာ ပက်ကေ့ဂျ် / ရိက္ခာ", ta: "உணவுப் பொதி / ரேஷன்" },
+  "Food pack / rations": { id: "Paket makanan / ransum", ms: "Pek makanan / catuan", tl: "Pakete ng pagkain / rasyon", zh: "食物包 / 口粮", my: "အစားအစာ ပက်ကေ့ဂျ် / ရိက္ခာ", ta: "உணவுப் பொதி / ரேஷன்" },
   "Caregiver cannot check in": { id: "Pengasuh tidak bisa memeriksa", ms: "Penjaga tidak dapat menyemak", tl: "Hindi makapag-check ang tagapag-alaga", zh: "照护者无法探视", my: "ပြုစုသူ စစ်ဆေး၍ မရပါ", ta: "பராமரிப்பாளரால் பார்வையிட முடியவில்லை" },
   "Follow-up after symptoms": { id: "Tindak lanjut setelah gejala", ms: "Susulan selepas gejala", tl: "Follow-up pagkatapos ng sintomas", zh: "症状后随访", my: "ရောဂါလက္ခဏာ ပြီးနောက် ဆက်လက်ကြည့်ရှုခြင်း", ta: "அறிகுறிகளுக்குப் பின் தொடர்ந்து கவனிப்பு" },
   "General wellbeing check": { id: "Pemeriksaan kesejahteraan umum", ms: "Pemeriksaan kesejahteraan umum", tl: "Pangkalahatang welfare check", zh: "一般健康探访", my: "ယေဘုယျ ကျန်းမာရေး စစ်ဆေးခြင်း", ta: "பொது நல்வாழ்வுச் சோதனை" },
