@@ -480,13 +480,19 @@ export default function AskOrcaChat({
   return (
     <div
       className="fade-enter fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+      // Track the visual viewport (set in AppContext) so the sheet sits flush
+      // above the on-screen keyboard instead of behind it. Falls back to the
+      // full layout viewport before JS measures it / on browsers without it.
+      style={{ top: "var(--vvtop, 0px)", height: "var(--vvh, 100dvh)" }}
       role="dialog"
       aria-modal="true"
       aria-label="Ask ORCA"
     >
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/40" />
 
-      <div className="pop-enter relative flex h-[85dvh] w-full max-w-md flex-col overflow-hidden rounded-t-[28px] bg-app sm:h-[600px] sm:max-h-[86dvh] sm:rounded-[28px]">
+      {/* h caps at 100% of the (visible) overlay, so when the keyboard shrinks
+          the viewport the sheet shrinks with it — no oversized box, no big gap. */}
+      <div className="pop-enter relative flex h-[min(85dvh,100%)] w-full max-w-md flex-col overflow-hidden rounded-t-[28px] bg-app sm:h-[600px] sm:max-h-[86dvh] sm:rounded-[28px]">
         {/* Header — usage counters replace the old AI-assistant note. */}
         <div className="flex items-center justify-between gap-2 border-b border-black/5 bg-card px-5 py-3.5">
           <div className="min-w-0">

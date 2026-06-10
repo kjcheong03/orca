@@ -47,6 +47,11 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   themeColor: "#e3f2fd",
+  // cover → env(safe-area-inset-*) actually resolves on notched iOS devices.
+  viewportFit: "cover",
+  // resizes-content → on Android/Chromium the layout viewport (and dvh) shrinks
+  // for the keyboard. No-op on iOS Safari (handled via visualViewport instead).
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({

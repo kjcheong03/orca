@@ -54,11 +54,16 @@ function TabCell({
 }
 
 export default function BottomNav() {
-  const { tab, setTab, t } = useApp();
+  const { tab, setTab, t, keyboardOpen } = useApp();
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-black/5 bg-white lg:hidden"
+      // On mobile the keyboard would otherwise strand this fixed bar mid-screen
+      // (iOS) or cover it — slide it out of the way while a field is focused.
+      className={`fixed inset-x-0 bottom-0 z-30 border-t border-black/5 bg-white transition-transform duration-200 lg:hidden ${
+        keyboardOpen ? "pointer-events-none translate-y-full" : ""
+      }`}
+      aria-hidden={keyboardOpen || undefined}
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       {/* fixed-height bar; the four tabs fill the width (each flex-1). The
