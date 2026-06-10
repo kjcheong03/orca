@@ -24,8 +24,15 @@ import {
 import { SolidPhone } from "@/components/glyphs";
 import { useApp } from "@/context/AppContext";
 import { useOnline } from "@/lib/online";
-import { ambulance, contacts } from "@/lib/data";
+import { ambulance } from "@/lib/data";
 import { defaultProfiles, loadActiveProfile, type ElderProfile } from "@/lib/profiles";
+import {
+  defaultContacts,
+  loadAlertMessage,
+  loadContacts,
+  saveAlertMessage,
+  saveContacts,
+} from "@/lib/contacts";
 import type { Contact } from "@/lib/types";
 
 function initialsOf(name: string): string {
@@ -42,7 +49,7 @@ function initialsOf(name: string): string {
 export default function ContactsScreen() {
   const { t, tx, lang, tab } = useApp();
   const online = useOnline();
-  const [list, setList] = useState<Contact[]>(contacts);
+  const [list, setList] = useState<Contact[]>(() => defaultContacts());
   const [formMode, setFormMode] = useState<{ type: "add" } | { type: "edit"; contact: Contact } | null>(null);
   const [actionsFor, setActionsFor] = useState<Contact | null>(null);
   const [careOpen, setCareOpen] = useState(true);
@@ -60,6 +67,23 @@ export default function ContactsScreen() {
   useEffect(() => {
     setProfile(loadActiveProfile());
   }, [tab]);
+
+  // Emergency contacts and the alert draft persist to localStorage, so adding /
+  // deleting a contact and the message survive a reload. Hydrate after mount
+  // (initial render stays the seeded defaults so SSR markup matches), then write
+  // back on every change once hydrated — never clobbering stored data on mount.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    setList(loadContacts());
+    setMsg(loadAlertMessage());
+    setHydrated(true);
+  }, []);
+  useEffect(() => {
+    if (hydrated) saveContacts(list);
+  }, [list, hydrated]);
+  useEffect(() => {
+    if (hydrated) saveAlertMessage(msg);
+  }, [msg, hydrated]);
 
   // Care-card details — kept entirely separate from the alert message.
   const cardDetails = [
