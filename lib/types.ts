@@ -97,4 +97,4 @@ export interface EmergencyReason {
   statement: string;
 }
 
-export type Language = "en" | "id" | "tl" | "my" | "zh" | "ms";
+export type Language = "en" | "id" | "tl" | "my" | "zh" | "ms" | "ta";

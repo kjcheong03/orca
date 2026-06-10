@@ -16,6 +16,7 @@ export const AI_LANG_LABEL: Record<Language, string> = {
   tl: "Tagalog (Filipino)",
   zh: "Simplified Chinese (简体中文)",
   my: "Burmese (မြန်မာ, Unicode — never Zawgyi)",
+  ta: "Tamil (தமிழ்)",
 };
 
 /** Per-language tone so replies feel local, not machine-translated. */
@@ -26,6 +27,7 @@ export const AI_CULTURAL_NOTES: Record<Language, string> = {
   tl: 'Use "po/opo" throughout. Refer to the elderly warmly (e.g. "si Lola"). Family-first Filipino tone.',
   zh: "用简体中文。温暖、口语化、简短。称呼长者用「陈女士」「她」，不要生硬。",
   my: "Polite particles (ပါ/နော်). Calm, measured, respectful. Avoid blunt commands.",
+  ta: "இயல்பான, நவீன சிங்கப்பூர் தமிழில் எழுதுங்கள். பெரியவர்களை மரியாதையுடன் (அவர்/பாட்டி) அழைக்கவும்; கட்டளைகள் அல்ல, மென்மையான பரிந்துரைகளாகச் சொல்லுங்கள். அன்பான, குடும்பம் போன்ற தொனி.",
 };
 
 function patientSnippet(): string {

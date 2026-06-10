@@ -1,6 +1,6 @@
 import type { Advisory, Language } from "./types";
 
-export const languageOrder: Language[] = ["en", "id", "tl", "my", "zh", "ms"];
+export const languageOrder: Language[] = ["en", "id", "tl", "my", "zh", "ms", "ta"];
 
 /** Native names shown in the language picker. */
 export const languageNames: Record<Language, string> = {
@@ -10,6 +10,7 @@ export const languageNames: Record<Language, string> = {
   my: "မြန်မာ",
   zh: "中文",
   ms: "Bahasa Melayu",
+  ta: "தமிழ்",
 };
 
 /** Two-letter code shown on the nav language button. */
@@ -20,6 +21,7 @@ export const languageCodes: Record<Language, string> = {
   my: "MY",
   zh: "ZH",
   ms: "MS",
+  ta: "TA",
 };
 
 type Dict = Record<string, string>;
@@ -449,7 +451,86 @@ const my: Dict = {
   "reason.fainted": "မေ့သွားခြင်း",
 };
 
-const translations: Record<Language, Dict> = { en, id, ms, zh, tl, my };
+const ta: Dict = {
+  "nav.info": "தகவல்",
+  "nav.support": "சமூகம்",
+  "nav.contacts": "தொடர்புகள்",
+  "nav.profile": "சுயவிவரம்",
+
+  "broadcast.title": "அறிவிப்புகள்",
+
+  "info.environment": "சுற்றுச்சூழல் அபாயங்கள்",
+  "info.signals": "தற்போதைய சுகாதார எச்சரிக்கைகள்",
+
+  "common.whatToDo": "என்ன செய்ய வேண்டும்",
+  "common.why": "ஏன்?",
+  "common.yes": "ஆம்",
+  "common.no": "இல்லை",
+  "common.notSure": "உறுதியாகத் தெரியவில்லை",
+  "common.continue": "தொடரவும்",
+  "badge.urgent": "அவசரம்",
+  "badge.precautionary": "முன்னெச்சரிக்கை",
+
+  "support.request": "உதவி கேட்கவும்",
+  "support.guides": "பராமரிப்பு வழிகாட்டிகள்",
+
+  "request.title": "சமூக ஆதரவு",
+  "request.subtitle": "சுகாதார அறிவிப்பின் போது அவசரமில்லாத உதவிக்கு.",
+  "request.nonEmergency": "அவசரமில்லாதது",
+  "request.lifeThreateningQ": "இது இப்போது உயிருக்கு ஆபத்தானதா அல்லது அவசரமானதா?",
+  "request.yesUrgent": "ஆம் — அவசர உதவியைப் பெறவும்",
+  "request.noContinue": "இல்லை, தொடரவும்",
+  "request.escalationBanner": "உயிருக்கு ஆபத்தா? அவசர மேம்படுத்தல் ஆதரவைப் பயன்படுத்தவும்",
+  "request.whatHelp": "உங்களுக்கு என்ன உதவி தேவை?",
+  "request.careRecipient": "பராமரிப்பு பெறுபவர்:",
+  "request.relatedAdvisory": "தொடர்புடைய அறிவிப்பு (விருப்பத்திற்கு)",
+  "request.location": "இடம் / அஞ்சல் பகுதி",
+  "request.locationPlaceholder": "எ.கா. 560123 அல்லது Ang Mo Kio",
+  "request.contactMethod": "உங்களை நாங்கள் எப்படி தொடர்பு கொள்வது?",
+  "request.send": "கோரிக்கையை அனுப்பவும்",
+  "request.sentTitle": "கோரிக்கை அனுப்பப்பட்டது",
+  "request.sentDesc":
+    "அங்கீகரிக்கப்பட்ட கூட்டாளர்களுக்கு அனுப்பப்பட்டது. நீங்கள் தேர்ந்தெடுத்த தொடர்பு முறையில் அவர்கள் உங்களை அணுகுவார்கள்.",
+  "request.routedTo": "அனுப்பப்பட்டது",
+  "request.new": "புதிய கோரிக்கை",
+
+  "guides.procedure": "செயல்முறை",
+  "guides.emergencyMedicine": "அவசர மருந்து",
+
+  "profile.upload": "பதிவேற்றவும்",
+  "profile.conditions": "உடல்நிலைகள்",
+  "profile.emergencyMedicine": "அவசர மருந்து",
+  "profile.measurements": "அளவீடுகள்",
+
+  "contacts.title": "அவசர தொடர்புகள்",
+  "contacts.subtitle": "யாரை அழைக்க வேண்டும் என்பதைத் தட்டவும்",
+  "contacts.needAmbulance": "ஆம்புலன்ஸ் அழைக்கவும் (995)",
+
+  "emergency.whatHappened": "என்ன நடந்தது?",
+  "emergency.twoQuestions": "இரண்டு விரைவான கேள்விகள்",
+  "emergency.twoQuestionsSub": "ஒரு பதிலைத் தட்டவும் — நீங்கள் சொல்வதில் அது சேர்க்கப்படும்.",
+  "emergency.isAwake": "அவர்கள் விழித்திருக்கிறார்களா?",
+  "emergency.isBreathing": "அவர்கள் சுவாசிக்கிறார்களா?",
+  "emergency.calling": "அழைக்கிறது",
+  "emergency.pressToCall": "அழைக்க அழுத்தவும் — பிறகு கீழே உள்ள வழிகாட்டுதலைப் பின்பற்றவும்",
+  "emergency.whatToSay": "என்ன சொல்ல வேண்டும்",
+  "emergency.doIfInstructed": "சொன்னால் செய்யவும்",
+  "emergency.speakSlowly": "மெதுவாகவும் தெளிவாகவும் பேசவும். அவர்களிடம் சொல்லவும்:",
+  "emergency.who": "யார்",
+  "emergency.what": "என்ன நடந்தது",
+  "emergency.where": "எங்கே",
+  "emergency.awake": "விழித்திருக்கிறார்",
+  "emergency.breathing": "சுவாசிக்கிறார்",
+
+  "reason.accident": "ஒரு விபத்து",
+  "reason.chest-pain": "மார்பு வலி",
+  "reason.breathless": "மூச்சுத் திணறல்",
+  "reason.unconscious": "சுயநினைவு இழப்பு",
+  "reason.fall": "கீழே விழுதல்",
+  "reason.fainted": "மயக்கம்",
+};
+
+const translations: Record<Language, Dict> = { en, id, ms, zh, tl, my, ta };
 
 export function translate(lang: Language, key: string): string {
   return translations[lang]?.[key] ?? en[key] ?? key;

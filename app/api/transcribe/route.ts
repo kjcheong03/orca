@@ -18,6 +18,7 @@ const ISO: Record<Language, string> = {
   tl: "tl",
   zh: "zh",
   my: "my",
+  ta: "ta",
 };
 
 // A short seed phrase in the set language — domain/vocabulary priming to
@@ -29,6 +30,7 @@ const PRIME: Record<Language, string> = {
   tl: "Isang tagapag-alaga ang nagtatanong tungkol sa kalusugan ng matanda sa Singapore.",
   zh: "一位看护者在询问新加坡一位长者的健康状况。",
   my: "ပြုစုစောင့်ရှောက်သူတစ်ဦးသည် စင်္ကာပူရှိ သက်ကြီးရွယ်အိုတစ်ဦး၏ ကျန်းမာရေးအကြောင်း မေးနေသည်။",
+  ta: "ஒரு பராமரிப்பாளர் சிங்கப்பூரில் வயதான ஒருவரின் உடல்நலம் குறித்து கேட்கிறார்.",
 };
 
 export async function POST(req: NextRequest) {

@@ -10,7 +10,7 @@
 // client.navigate(), so installs that pre-date the client-side
 // controllerchange listener still pick up new builds.
 
-const CACHE = "orca-v6";
+const CACHE = "orca-v7";
 const OFFLINE_URL = "/";
 
 // --- Offline request outbox (Background Sync) ------------------------------
