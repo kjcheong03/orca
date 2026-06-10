@@ -10,8 +10,13 @@
 // client.navigate(), so installs that pre-date the client-side
 // controllerchange listener still pick up new builds.
 
-const CACHE = "orca-v7";
+const CACHE = "orca-v8";
 const OFFLINE_URL = "/";
+
+// Dedicated, version-independent cache for the Mapbox basemap (dengue map).
+// Kept separate from CACHE so bumping the app version never purges already-
+// downloaded tiles — they stay available offline.
+const MAP_CACHE = "orca-mapbox-v1";
 
 // --- Offline request outbox (Background Sync) ------------------------------
 // Mirrors lib/requestQueue.ts. On the `sync` event (fired by the browser when
@@ -87,7 +92,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     // 1. Delete any cache whose key doesn't match the current CACHE version.
     const keys = await caches.keys();
-    await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
+    await Promise.all(keys.filter((k) => k !== CACHE && k !== MAP_CACHE).map((k) => caches.delete(k)));
 
     // 2. Take control of every existing client immediately (so the navigate
     //    call below targets clients this SW is now the controller of).
@@ -120,8 +125,32 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
-  // Never intercept API routes or cross-origin requests (e.g. Supabase media,
-  // OpenAI) — they must hit the network.
+
+  // Mapbox basemap (dengue map): CACHE-FIRST into a dedicated cache so tiles
+  // viewed while online still render when offline or on a flaky connection.
+  // Runtime caching only — no bulk pre-download. ClusterMapLive requests tiles
+  // with crossOrigin, so these responses are CORS (not opaque) and safe to
+  // cache; a basemap is effectively static, so cache-first is fine and also
+  // trims repeat Mapbox requests.
+  if (url.hostname === "api.mapbox.com" || url.hostname.endsWith(".tiles.mapbox.com")) {
+    event.respondWith(
+      caches.open(MAP_CACHE).then(async (cache) => {
+        const hit = await cache.match(request);
+        if (hit) return hit;
+        try {
+          const res = await fetch(request);
+          if (res && res.ok) cache.put(request, res.clone());
+          return res;
+        } catch {
+          return hit || Response.error();
+        }
+      })
+    );
+    return;
+  }
+
+  // Never intercept API routes or other cross-origin requests (e.g. Supabase
+  // media, OpenAI) — they must hit the network.
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/")) return;
 

@@ -47,6 +47,10 @@ export default function ClusterMapLive({ home }: { home: Home }) {
           url={`https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`}
           tileSize={512}
           zoomOffset={-1}
+          // Fetch tiles with CORS so the service worker can cache them as
+          // non-opaque responses — that's what lets the basemap render offline
+          // (see public/sw.js). Mapbox serves tiles with Access-Control-Allow-Origin.
+          crossOrigin="anonymous"
           attribution="&copy; Mapbox &copy; OpenStreetMap"
         />
 

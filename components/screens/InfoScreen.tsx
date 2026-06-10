@@ -38,6 +38,12 @@ const ClusterMapLive = dynamic(() => import("@/components/ClusterMapLive"), {
   loading: () => <div className="h-[380px] animate-pulse rounded-2xl bg-app" />,
 });
 
+// When a Mapbox token is configured we always use the live tiled map — the
+// service worker caches its tiles so it keeps rendering offline (and the cluster
+// polygons / rings / home marker are vector-drawn, so they show even on a cold,
+// uncached basemap). The tile-free SVG map is the fallback when there's no token.
+const HAS_MAPBOX = !!process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+
 const tierStyle: Record<Tier, { text: string; dot: string; soft: string }> = {
   low: { text: "text-[#1a8f5e]", dot: "bg-[#1a8f5e]", soft: "bg-[#e6f5ee]" },
   moderate: { text: "text-warn", dot: "bg-warn", soft: "bg-warn-soft" },
@@ -489,11 +495,11 @@ function DengueCards() {
         </div>
 
         {/* isolate: contain Leaflet's internal z-index so its controls/tiles
-            don't render over modals layered above the page. Offline, the live
-            Mapbox tiles can't load, so fall back to the tile-free SVG map (the
-            cluster data is bundled, so it works fully offline). */}
+            don't render over modals layered above the page. The live Mapbox map
+            is used whenever a token is set — the service worker caches its tiles
+            so it keeps rendering offline; the SVG map is the no-token fallback. */}
         <div className="isolate mt-3">
-          {online ? (
+          {HAS_MAPBOX ? (
             <ClusterMapLive home={HOME} />
           ) : (
             <div className="rounded-2xl bg-[#eef2fb] p-2">
