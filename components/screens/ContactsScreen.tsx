@@ -58,6 +58,8 @@ export default function ContactsScreen() {
   const [smsFor, setSmsFor] = useState<Contact | null>(null);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  // Demo build: the 995 button is disabled so it can't place a real call.
+  const [restricted, setRestricted] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
@@ -282,14 +284,31 @@ export default function ContactsScreen() {
         </AnimatePresence>
       </div>
 
-      {/* 995 — divider with extra breathing room above the button */}
+      {/* 995 — disabled in the demo build; tapping shows a transient notice. */}
       <div className="border-t border-black/[0.08] pt-7">
-        <a
-          href={`tel:${ambulance.phone}`}
+        <button
+          type="button"
+          onClick={() => {
+            setRestricted(true);
+            window.setTimeout(() => setRestricted(false), 2200);
+          }}
           className="flex w-full items-center justify-center gap-2.5 rounded-full bg-danger px-7 py-3.5 text-[15px] font-bold text-white transition-transform active:scale-[0.98]"
         >
           <SolidPhone size={18} /> {t("contacts.needAmbulance")}
-        </a>
+        </button>
+        <AnimatePresence>
+          {restricted && (
+            <motion.p
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.18 }}
+              className="mt-2 text-center text-[13px] font-medium text-faint"
+            >
+              {tx("Restricted — for demo purposes only")}
+            </motion.p>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Emergency Contacts */}
