@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { SolidPhone } from "@/components/glyphs";
 import { useApp } from "@/context/AppContext";
+import { tx as txAuto } from "@/lib/i18n/auto";
 import { useOnline } from "@/lib/online";
 import { ambulance } from "@/lib/data";
 import { defaultProfiles, loadActiveProfile, type ElderProfile } from "@/lib/profiles";
@@ -33,7 +34,7 @@ import {
   saveAlertMessage,
   saveContacts,
 } from "@/lib/contacts";
-import type { Contact } from "@/lib/types";
+import type { Contact, Language } from "@/lib/types";
 
 function initialsOf(name: string): string {
   return (
@@ -86,14 +87,6 @@ export default function ContactsScreen() {
   useEffect(() => {
     if (hydrated) saveAlertMessage(msg);
   }, [msg, hydrated]);
-
-  // Care-card details — kept entirely separate from the alert message.
-  const cardDetails = [
-    `${profile.name} (${profile.sex}, ${profile.age})`,
-    profile.address,
-    `Conditions: ${profile.conditions.join(", ")}`,
-    `Emergency medicine: ${profile.emergencyMedicine.map((m) => `${m.name} — ${m.dose}`).join("; ")}`,
-  ].join("\n");
 
   const saveContact = (name: string, relation: string, phone: string) => {
     const base = { initials: initialsOf(name), name: name.trim(), relation: relation.trim(), phone: phone.trim() };
@@ -384,7 +377,7 @@ export default function ContactsScreen() {
         <SmsSheet
           contact={smsFor}
           alertText={msg}
-          cardDetails={cardDetails}
+          profile={profile}
           onClose={() => setSmsFor(null)}
         />
       )}
@@ -415,6 +408,22 @@ const SEND_LANGS: { code: string; label: string }[] = [
   { code: "my", label: "မြန်မာ" },
 ];
 
+/** The emergency card as SMS text, in `lang`. Built from the SAME dictionary
+ *  (txAuto) the on-screen card uses, so the SMS matches the card exactly — no
+ *  LLM round-trip needed. Names and addresses stay verbatim; conditions/dose
+ *  fall back to English only when the dictionary has no entry (which is exactly
+ *  what the on-screen card shows too, so the two never disagree). */
+function buildCardDetails(profile: ElderProfile, lang: Language): string {
+  return [
+    `${profile.name} (${txAuto(lang, profile.sex)}, ${profile.age})`,
+    profile.address,
+    `${txAuto(lang, "Conditions")}: ${profile.conditions.map((c) => txAuto(lang, c)).join(", ")}`,
+    `${txAuto(lang, "Emergency medicine")}: ${profile.emergencyMedicine
+      .map((m) => `${m.name} — ${txAuto(lang, m.dose)}`)
+      .join("; ")}`,
+  ].join("\n");
+}
+
 /** Per-contact SMS: pick what to attach (emergency card / the alert message /
  *  a translated version), then deep-link to the phone's Messages app for that
  *  one number. Single recipient keeps delivery reliable across iOS/Android
@@ -423,12 +432,12 @@ const SEND_LANGS: { code: string; label: string }[] = [
 function SmsSheet({
   contact,
   alertText,
-  cardDetails,
+  profile,
   onClose,
 }: {
   contact: Contact;
   alertText: string;
-  cardDetails: string;
+  profile: ElderProfile;
   onClose: () => void;
 }) {
   const { tx, txf, lang } = useApp();
@@ -447,11 +456,16 @@ function SmsSheet({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // Translate only makes sense when there's a message to include, we're online,
-  // and the chosen language differs from the compose language.
-  const translateActive = translateOn && withMessage && hasMessage && online;
+  // Translate makes sense when there's something to send — a message and/or the
+  // emergency card — we're online, and the chosen language differs from compose.
+  const hasContent = (withMessage && hasMessage) || withCard;
+  const translateActive = translateOn && hasContent && online;
+  const translateNeeded = translateActive && targetCode !== lang;
+  // Only the free-text alert message needs the LLM — the emergency card is fixed
+  // fields with curated dictionary translations, so it's built locally below.
+  const translateMessage = translateNeeded && withMessage && hasMessage;
   useEffect(() => {
-    if (!translateActive || targetCode === lang) {
+    if (!translateMessage) {
       setTranslated(null);
       setTranslating(false);
       return;
@@ -470,14 +484,17 @@ function SmsSheet({
     return () => {
       cancelled = true;
     };
-  }, [translateActive, targetCode, alertText, lang]);
+  }, [translateMessage, targetCode, alertText]);
 
   const messageOut = withMessage
-    ? translateActive && targetCode !== lang
+    ? translateMessage
       ? (translated ?? alertText.trim())
       : alertText.trim()
     : "";
-  const cardOut = withCard ? cardDetails : "";
+  // Card language follows the same choice: target when translating, else the
+  // app language — so the SMS card always equals the on-screen card.
+  const cardLang: Language = translateNeeded ? (targetCode as Language) : lang;
+  const cardOut = withCard ? buildCardDetails(profile, cardLang) : "";
   const body = [messageOut, cardOut].filter(Boolean).join("\n\n");
   const number = contact.phone.replace(/\s/g, "");
   const href = `sms:${number}${body ? `?&body=${encodeURIComponent(body)}` : ""}`;
@@ -536,7 +553,7 @@ function SmsSheet({
             type="button"
             onClick={() => setTranslateOn((v) => !v)}
             aria-pressed={translateActive}
-            disabled={!withMessage || !hasMessage || !online}
+            disabled={!hasContent || !online}
             className="flex w-full items-center gap-3 rounded-2xl bg-app px-4 py-3 text-left disabled:opacity-50"
           >
             <Languages size={18} className="shrink-0 text-brand" />
@@ -544,8 +561,8 @@ function SmsSheet({
               <span className="block text-[14px] font-semibold text-ink">{tx("Translate message")}</span>
               {!online ? (
                 <span className="block text-[12px] text-faint">{tx("needs a connection")}</span>
-              ) : !withMessage || !hasMessage ? (
-                <span className="block text-[12px] text-faint">{tx("Include a message first")}</span>
+              ) : !hasContent ? (
+                <span className="block text-[12px] text-faint">{tx("Attach a message or card first")}</span>
               ) : null}
             </span>
             <Checkbox on={translateActive} />
@@ -571,15 +588,19 @@ function SmsSheet({
                   <ChevronDown size={16} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-faint" />
                 </div>
               </div>
-              <div className="mt-2 max-h-24 overflow-y-auto rounded-xl bg-white px-3 py-2 text-[13px] leading-snug text-body">
-                {translating ? (
-                  <span className="flex items-center gap-1.5 text-faint">
-                    <Loader2 size={14} className="animate-spin" /> {tx("Translating…")}
-                  </span>
-                ) : (
-                  messageOut || alertText.trim()
-                )}
-              </div>
+              {/* Preview shows the translated message only; the card is sent
+                  translated but isn't previewed here. */}
+              {withMessage && hasMessage && (
+                <div className="mt-2 max-h-24 overflow-y-auto rounded-xl bg-white px-3 py-2 text-[13px] leading-snug text-body">
+                  {translating ? (
+                    <span className="flex items-center gap-1.5 text-faint">
+                      <Loader2 size={14} className="animate-spin" /> {tx("Translating…")}
+                    </span>
+                  ) : (
+                    messageOut || alertText.trim()
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

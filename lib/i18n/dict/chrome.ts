@@ -418,6 +418,7 @@ export const chrome: Dict = {
   "Translate message": { id: "Terjemahkan pesan", ms: "Terjemah mesej", tl: "Isalin ang mensahe", zh: "翻译信息", my: "စာတို ဘာသာပြန်ရန်", ta: "செய்தியை மொழிபெயர்க்கவும்" },
   "Send in": { id: "Kirim dalam", ms: "Hantar dalam", tl: "Ipadala sa", zh: "发送语言", my: "ဘာသာဖြင့် ပို့ရန်", ta: "இந்த மொழியில் அனுப்பு" },
   "Translating…": { id: "Menerjemahkan…", ms: "Menterjemah…", tl: "Isinasalin…", zh: "正在翻译…", my: "ဘာသာပြန်နေသည်…", ta: "மொழிபெயர்க்கிறது…" },
+  "Attach a message or card first": { id: "Lampirkan pesan atau kartu dulu", ms: "Sertakan mesej atau kad dahulu", tl: "Maglakip muna ng mensahe o card", zh: "请先附上信息或卡片", my: "စာတို သို့မဟုတ် ကတ်ကို ဦးစွာ ပူးတွဲပါ", ta: "முதலில் ஒரு செய்தி அல்லது அட்டையை இணைக்கவும்" },
 
   // --- alert message helper (Contacts) ---
   "You can attach this alert message when you SMS an emergency contact below.": {
