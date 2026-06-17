@@ -44,24 +44,35 @@ caregiver's language, and working even offline.
 
 ### Info, Ask ORCA, and advisories
 
-| Info page | Ask ORCA | Advisories |
-|---|---|---|
-| <img src="docs/screenshots/orca-info.png" alt="ORCA info page" width="220" height="476" /> | <img src="docs/screenshots/orca-ask-orca.png" alt="Ask ORCA chat" width="220" height="476" /> | <img src="docs/screenshots/orca-advisories.png" alt="ORCA advisories screen" width="220" height="476" /> |
-| Local situation overview, approved resources, and practical actions tailored to the care recipient's profile. | Context-aware caregiver chat that uses the same emergency and care profile, with guardrails around diagnosis and medical advice. | Vetted authority broadcasts and verified resources shown in the caregiver's language. |
+<p align="left">
+  <img src="docs/screenshots/orca-info.png" alt="ORCA info page" width="220" height="476" />
+  <img src="docs/screenshots/orca-ask-orca.png" alt="Ask ORCA chat" width="220" height="476" />
+  <img src="docs/screenshots/orca-advisories.png" alt="ORCA advisories screen" width="220" height="476" />
+</p>
+
+- **Info page**: Local situation overview, approved resources, and practical actions tailored to the care recipient's profile.
+- **Ask ORCA**: Context-aware caregiver chat that uses the same emergency and care profile, with guardrails around diagnosis and medical advice.
+- **Advisories**: Vetted authority broadcasts and verified resources shown in the caregiver's language.
 
 ### Support requests
 
-| Support | Request form |
-|---|---|
-| <img src="docs/screenshots/orca-support.png" alt="ORCA support screen" width="220" height="476" /> | <img src="docs/screenshots/orca-support-form.png" alt="ORCA support request form" width="220" height="476" /> |
-| Choose the type of non-emergency help needed and see request history as partner updates flow back. | Guided form turns the caregiver's need into a structured request that can be routed by fit, availability, and proximity. |
+<p align="left">
+  <img src="docs/screenshots/orca-support.png" alt="ORCA support screen" width="220" height="476" />
+  <img src="docs/screenshots/orca-support-form.png" alt="ORCA support request form" width="220" height="476" />
+</p>
+
+- **Support**: Choose the type of non-emergency help needed and see request history as partner updates flow back.
+- **Request form**: Guided form turns the caregiver's need into a structured request that can be routed by fit, availability, and proximity.
 
 ### Contacts
 
-| Contacts | SMS alerts |
-|---|---|
-| <img src="docs/screenshots/orca-contacts.png" alt="ORCA contacts page" width="220" height="476" /> | <img src="docs/screenshots/orca-contacts-sms.png" alt="ORCA contacts SMS alert screen" width="220" height="476" /> |
-| Call 995 or an emergency contact with the care recipient's key details ready to read out. | Send an alert message with the emergency card, translated per contact when needed. |
+<p align="left">
+  <img src="docs/screenshots/orca-contacts.png" alt="ORCA contacts page" width="220" height="476" />
+  <img src="docs/screenshots/orca-contacts-sms.png" alt="ORCA contacts SMS alert screen" width="220" height="476" />
+</p>
+
+- **Contacts**: Call 995 or an emergency contact with the care recipient's key details ready to read out.
+- **SMS alerts**: Send an alert message with the emergency card, translated per contact when needed.
 
 ### Profile
 
