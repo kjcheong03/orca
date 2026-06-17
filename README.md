@@ -96,6 +96,11 @@ From the caregiver's seat:
 5. As the partner accepts, schedules, and fulfils it, the **status flows back** into ORCA — the
    caregiver always sees where things stand.
 
+## Related repositories
+
+- [ORCA Authority Dashboard](https://github.com/kjcheong03/authority-dashboard)
+- [ORCA Community Partner Dashboard](https://github.com/kjcheong03/cara-community-dashboard)
+
 ## Tech stack
 
 - **Next.js 15** (App Router) · **React 19** · **TypeScript**
