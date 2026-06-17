@@ -49,27 +49,27 @@ caregiver's language, and working even offline.
 
 ### Support
 
-| Support | Request form |  |
-|---|---|---|
-| <img src="docs/screenshots/orca-support.png" alt="ORCA support screen" width="220" height="476" /> | <img src="docs/screenshots/orca-support-form.png" alt="ORCA support request form" width="220" height="476" /> |  |
+| Support | Request form |
+|---|---|
+| <img src="docs/screenshots/orca-support.png" alt="ORCA support screen" width="220" height="476" /> | <img src="docs/screenshots/orca-support-form.png" alt="ORCA support request form" width="220" height="476" /> |
 
 - **Support**: Choose the type of non-emergency help needed and see request history as partner updates flow back.
 - **Request form**: Guided form turns the caregiver's need into a structured request that can be routed by fit, availability, and proximity.
 
 ### Contacts
 
-| Contacts | SMS alerts |  |
-|---|---|---|
-| <img src="docs/screenshots/orca-contacts.png" alt="ORCA contacts page" width="220" height="476" /> | <img src="docs/screenshots/orca-contacts-sms.png" alt="ORCA contacts SMS alert screen" width="220" height="476" /> |  |
+| Contacts | SMS alerts |
+|---|---|
+| <img src="docs/screenshots/orca-contacts.png" alt="ORCA contacts page" width="220" height="476" /> | <img src="docs/screenshots/orca-contacts-sms.png" alt="ORCA contacts SMS alert screen" width="220" height="476" /> |
 
 - **Contacts**: Call 995 or an emergency contact with the care recipient's key details ready to read out.
 - **SMS alerts**: Send an alert message with the emergency card, translated per contact when needed.
 
 ### Profile
 
-Care recipient details, conditions, medicines, and measurements that ORCA uses to personalise guidance.
-
 <img src="docs/screenshots/orca-profile.png" alt="ORCA profile screen" width="220" height="476" />
+
+- **Profile**: Care recipient details, conditions, medicines, and measurements that ORCA uses to personalise guidance.
 
 ## How it all connects
 
@@ -101,7 +101,7 @@ From the caregiver's seat:
 - **Next.js 15** (App Router) · **React 19** · **TypeScript**
 - **Tailwind CSS v4** · **framer-motion** (animations + the risk-reactive mascot)
 - **Leaflet** + **Mapbox** for the dengue cluster map
-- **Installable PWA** — service worker, offline cache, and a background-sync outbox
+- **Installable PWA** with a service worker, offline cache, and background-sync outbox
 - **OpenAI** for chat, suggestions, voice, translation, and condition tailoring
 
 ## APIs & data sources
