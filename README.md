@@ -18,7 +18,7 @@ it means for *one specific person*. The guidance is one-size-fits-all, often onl
 useless the moment the connection drops. Asking for help — medication, groceries, a welfare check —
 means knowing who to call and hoping someone picks up.
 
-## How ORCA solves it
+## How ORCA's Caregiver Web App solves it
 
 ORCA is the caregiver's companion. It takes the official advisory and turns it into **plain,
 personalised advice** for the person being cared for — accounting for their conditions, in the
@@ -40,37 +40,34 @@ caregiver's language, and working even offline.
 - **Request help in a tap** — a simple, guided form routes non-emergency requests to community
   partners.
 
-## Screenshots
+## Features
 
-### Info
+### Info, Ask ORCA, and advisories
 
-Personalised situation summary and caregiver guidance.
+| Info page | Ask ORCA | Advisories |
+|---|---|---|
+| <img src="docs/screenshots/orca-info.png" alt="ORCA info page" width="220" height="476" /> | <img src="docs/screenshots/orca-ask-orca.png" alt="Ask ORCA chat" width="220" height="476" /> | <img src="docs/screenshots/orca-advisories.png" alt="ORCA advisories screen" width="220" height="476" /> |
+| Local situation overview, approved resources, and practical actions tailored to the care recipient's profile. | Context-aware caregiver chat that uses the same emergency and care profile, with guardrails around diagnosis and medical advice. | Vetted authority broadcasts and verified resources shown in the caregiver's language. |
 
-<img src="docs/screenshots/orca-info.png" alt="ORCA info screen" width="360" />
+### Support requests
 
-### Ask ORCA
-
-Caregiver-friendly chat support for health questions and next steps.
-
-<img src="docs/screenshots/orca-ask-orca.png" alt="Ask ORCA screen" width="360" />
-
-### Support request
-
-Non-emergency help request flow for community support.
-
-<img src="docs/screenshots/orca-support-request.png" alt="ORCA support request screen" width="360" />
+| Support | Request form |
+|---|---|
+| <img src="docs/screenshots/orca-support.png" alt="ORCA support screen" width="220" height="476" /> | <img src="docs/screenshots/orca-support-form.png" alt="ORCA support request form" width="220" height="476" /> |
+| Choose the type of non-emergency help needed and see request history as partner updates flow back. | Guided form turns the caregiver's need into a structured request that can be routed by fit, availability, and proximity. |
 
 ### Contacts
 
-Emergency contacts, SMS alert shortcut, and quick access to 995.
-
-<img src="docs/screenshots/orca-contacts.png" alt="ORCA contacts screen" width="360" />
+| Contacts | SMS alerts |
+|---|---|
+| <img src="docs/screenshots/orca-contacts.png" alt="ORCA contacts page" width="220" height="476" /> | <img src="docs/screenshots/orca-contacts-sms.png" alt="ORCA contacts SMS alert screen" width="220" height="476" /> |
+| Call 995 or an emergency contact with the care recipient's key details ready to read out. | Send an alert message with the emergency card, translated per contact when needed. |
 
 ### Profile
 
-Care recipient details, conditions, medicines, and measurements.
+Care recipient details, conditions, medicines, and measurements that ORCA uses to personalise guidance.
 
-<img src="docs/screenshots/orca-profile.png" alt="ORCA profile screen" width="360" />
+<img src="docs/screenshots/orca-profile.png" alt="ORCA profile screen" width="220" height="476" />
 
 ## How it all connects
 
