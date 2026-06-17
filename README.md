@@ -24,52 +24,43 @@ ORCA is the caregiver's companion. It takes the official advisory and turns it i
 personalised advice** for the person being cared for — accounting for their conditions, in the
 caregiver's language, and working even offline.
 
-- **Tailored guidance** — advisories and daily suggestions are matched to the care recipient's
-  health conditions (e.g. extra caution for diabetes or a heart condition).
-- **7 languages** — English, Chinese, Malay, Tamil, Bahasa Indonesia, Tagalog, Burmese — so domestic
-  helpers and family can use it comfortably.
-- **Emergency-aware guidance** — adapts guidance by emergency type, such as respiratory illnesses,
-  foodborne diseases, dengue outbreaks, and medical advisories.
-- **Ask ORCA** — an AI chat that answers caregiving questions and points to the right how-to video.
-- **Voice & translation** — speak in your own language, and translate an urgent alert before
-  forwarding it to family.
-- **Dengue cluster map** — see active clusters around the care recipient's home.
-- **One-tap safety** — emergency contacts, SMS alerts, and call **995**.
-- **Offline-first** — installs to the home screen and keeps working without a connection; help
-  requests made offline are queued and sent automatically when you're back online.
-- **Request help in a tap** — a simple, guided form routes non-emergency requests to community
-  partners.
+- **Personalised by profile** — advisories and daily suggestions are matched to the care recipient's
+  conditions, medicines, and care context.
+- **Multilingual by design** — English, Chinese, Malay, Tamil, Bahasa Indonesia, Tagalog, and Burmese
+  support helps caregivers act in the language they are comfortable with.
+- **Emergency-aware** — guidance adapts by emergency type, such as respiratory illnesses, foodborne
+  diseases, dengue outbreaks, and medical advisories.
+- **Offline-first PWA** — key care details, emergency actions, saved guidance, and queued support
+  requests keep working when the connection drops.
+- **Connected to the response chain** — authority advisories flow into the app, and caregiver support
+  requests flow out to community partners with status updates coming back.
 
 ## Features
 
-### Info, Ask ORCA, and advisories
+### Info
 
-<p align="left">
-  <img src="docs/screenshots/orca-info.png" alt="ORCA info page" width="220" height="476" />
-  <img src="docs/screenshots/orca-ask-orca.png" alt="Ask ORCA chat" width="220" height="476" />
-  <img src="docs/screenshots/orca-advisories.png" alt="ORCA advisories screen" width="220" height="476" />
-</p>
+| Info page | Ask ORCA | Advisories |
+|---|---|---|
+| <img src="docs/screenshots/orca-info.png" alt="ORCA info page" width="220" height="476" /> | <img src="docs/screenshots/orca-ask-orca.png" alt="Ask ORCA chat" width="220" height="476" /> | <img src="docs/screenshots/orca-advisories.png" alt="ORCA advisories screen" width="220" height="476" /> |
 
 - **Info page**: Local situation overview, approved resources, and practical actions tailored to the care recipient's profile.
 - **Ask ORCA**: Context-aware caregiver chat that uses the same emergency and care profile, with guardrails around diagnosis and medical advice.
 - **Advisories**: Vetted authority broadcasts and verified resources shown in the caregiver's language.
 
-### Support requests
+### Support
 
-<p align="left">
-  <img src="docs/screenshots/orca-support.png" alt="ORCA support screen" width="220" height="476" />
-  <img src="docs/screenshots/orca-support-form.png" alt="ORCA support request form" width="220" height="476" />
-</p>
+| Support | Request form |  |
+|---|---|---|
+| <img src="docs/screenshots/orca-support.png" alt="ORCA support screen" width="220" height="476" /> | <img src="docs/screenshots/orca-support-form.png" alt="ORCA support request form" width="220" height="476" /> |  |
 
 - **Support**: Choose the type of non-emergency help needed and see request history as partner updates flow back.
 - **Request form**: Guided form turns the caregiver's need into a structured request that can be routed by fit, availability, and proximity.
 
 ### Contacts
 
-<p align="left">
-  <img src="docs/screenshots/orca-contacts.png" alt="ORCA contacts page" width="220" height="476" />
-  <img src="docs/screenshots/orca-contacts-sms.png" alt="ORCA contacts SMS alert screen" width="220" height="476" />
-</p>
+| Contacts | SMS alerts |  |
+|---|---|---|
+| <img src="docs/screenshots/orca-contacts.png" alt="ORCA contacts page" width="220" height="476" /> | <img src="docs/screenshots/orca-contacts-sms.png" alt="ORCA contacts SMS alert screen" width="220" height="476" /> |  |
 
 - **Contacts**: Call 995 or an emergency contact with the care recipient's key details ready to read out.
 - **SMS alerts**: Send an alert message with the emergency card, translated per contact when needed.
