@@ -26,8 +26,10 @@ caregiver's language, and working even offline.
 
 - **Tailored guidance** — advisories and daily suggestions are matched to the care recipient's
   health conditions (e.g. extra caution for diabetes or a heart condition).
-- **6 languages** — English, Chinese, Malay, Bahasa Indonesia, Tagalog, Burmese — so domestic
+- **7 languages** — English, Chinese, Malay, Tamil, Bahasa Indonesia, Tagalog, Burmese — so domestic
   helpers and family can use it comfortably.
+- **Emergency-aware guidance** — adapts guidance by emergency type, such as respiratory illnesses,
+  foodborne diseases, dengue outbreaks, and medical advisories.
 - **Ask ORCA** — an AI chat that answers caregiving questions and points to the right how-to video.
 - **Voice & translation** — speak in your own language, and translate an urgent alert before
   forwarding it to family.
@@ -37,6 +39,38 @@ caregiver's language, and working even offline.
   requests made offline are queued and sent automatically when you're back online.
 - **Request help in a tap** — a simple, guided form routes non-emergency requests to community
   partners.
+
+## Screenshots
+
+### Info
+
+Personalised situation summary and caregiver guidance.
+
+<img src="docs/screenshots/orca-info.png" alt="ORCA info screen" width="360" />
+
+### Ask ORCA
+
+Caregiver-friendly chat support for health questions and next steps.
+
+<img src="docs/screenshots/orca-ask-orca.png" alt="Ask ORCA screen" width="360" />
+
+### Support request
+
+Non-emergency help request flow for community support.
+
+<img src="docs/screenshots/orca-support-request.png" alt="ORCA support request screen" width="360" />
+
+### Contacts
+
+Emergency contacts, SMS alert shortcut, and quick access to 995.
+
+<img src="docs/screenshots/orca-contacts.png" alt="ORCA contacts screen" width="360" />
+
+### Profile
+
+Care recipient details, conditions, medicines, and measurements.
+
+<img src="docs/screenshots/orca-profile.png" alt="ORCA profile screen" width="360" />
 
 ## How it all connects
 
@@ -76,10 +110,10 @@ From the caregiver's seat:
 | Service | Used for | Details |
 |---|---|---|
 | OpenAI · Chat Completions | "Ask ORCA" assistant | `gpt-4o-mini` |
-| OpenAI · Chat Completions | "For {name} today" suggestions (all 6 languages) | `gpt-4.1-mini` |
+| OpenAI · Chat Completions | "For {name} today" suggestions (all 7 languages) | `gpt-4.1-mini` |
 | OpenAI · Chat Completions | Translate urgent alerts | `gpt-4o-mini` |
 | OpenAI · Speech | Read advice aloud (text-to-speech) | `gpt-4o-mini-tts` |
-| OpenAI · Transcription | Voice-to-text in 6 languages | `gpt-4o-transcribe` |
+| OpenAI · Transcription | Voice-to-text in 7 languages | `gpt-4o-transcribe` |
 | OpenAI · Chat Completions | Classify free-text conditions → care targets | `gpt-4o-mini` |
 | data.gov.sg | Live COVID-19 weekly stats + NEA dengue clusters | Open data · no key |
 | OneMap | Postal code → address autofill | gov.sg · no key |
