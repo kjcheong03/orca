@@ -99,7 +99,7 @@ From the caregiver's seat:
 ## Related repositories
 
 - [ORCA Authority Dashboard](https://github.com/kjcheong03/authority-dashboard)
-- [ORCA Community Partner Dashboard](https://github.com/kjcheong03/cara-community-dashboard)
+- [ORCA Community Partner Dashboard](https://github.com/kjcheong03/community-partner-dashboard)
 
 ## Tech stack
 
